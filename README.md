@@ -1,22 +1,34 @@
 # Vindex 🛡️
 
-**Vindex** (Latin for *Defender/Champion*) is a modern, sleek, automated web vulnerability scanner and exploitation engine written in Go. 
+**Vindex** (Latin for *Defender*) is a web vulnerability scanner written in Go, built incrementally — one vulnerability class at a time — while learning the language itself.
 
-It is designed to assist human security analysts by automating the tedious "grunt work" of reconnaissance, mapping attack surfaces, and validating the **OWASP Top 10**.
+It currently performs passive header analysis and basic active reflected-XSS testing. It is an early-stage, learning-driven project, not a finished tool.
 
-## 🚀 Key Features
-* **Automated Recon:** Swiftly maps target endpoints and parameters.
-* **OWASP Top 10 Scanning:** Automated fuzzing for Injection, XSS, and broken access controls.
-* **Smart Validation:** Active, benign exploitation modules to eliminate false positives.
-* **Analyst Hand-off:** Generates clean, actionable markdown reports with proof-of-concept payloads.
+## Current Features
+- **Security header analysis:** flags missing `Content-Security-Policy`, `X-Frame-Options`, and `Strict-Transport-Security`, and reports what each absence means (e.g. clickjacking exposure, weaker XSS defense-in-depth, SSL-stripping risk).
+- **Reflected XSS testing:** sends a set of test payloads to common parameter names and checks for unescaped reflection in the response.
 
-## 🛠️ Installation
-Ensure you have Go installed on your system, then clone and build:
+## Planned
+- Structured findings report (not just console output)
+- `-e` flag to gate active exploitation attempts separately from passive detection
+- Concurrent scanning (goroutines) for faster multi-check runs
+- Additional checks: SQLi, IDOR, open redirect, directory exposure
+- Headless-browser-based checks for SPA/JS-rendered content and DOM XSS
+
+## Installation
 ```bash
 git clone https://github.com/Yanmife-source/Vindex
-cd vindex
-go build -o vindex main.go
+cd Vindex
+go build -o vindex ./...
 ```
 
+## Usage
+```bash
+./vindex <target-url>
+```
+
+## Why this project exists
+Built as a way to learn Go through a real, ongoing project rather than tutorials — each new check is also a reason to learn a new part of the language (structs, concurrency, error handling, etc.), documented as I go.
+
 ## ⚠️ Disclaimer
-*Vindex is intended for authorized security testing and educational purposes only. Do not run it against targets without prior written consent.*
+Vindex is intended for authorized security testing and educational purposes only. Only run it against systems you own or have explicit written permission to test.
