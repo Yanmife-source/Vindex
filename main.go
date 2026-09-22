@@ -23,4 +23,13 @@ func main(){
 		os.Exit(1)
 	}
 	url := args[0]
+
+	resp,err:=fetchURL(url)
+	if err!=nil {
+		fmt.Print("Error: ",err)
+		return
+	}
+	defer resp.Body.Close()
+
+	check_headers(resp)
 }
