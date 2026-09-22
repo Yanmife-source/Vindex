@@ -35,16 +35,6 @@ func fetchURL(url string) (*http.Response,error) {
 
 // Checks the  headers if the important secrutiy  headers are present or permissive 
 func check_headers(resp *http.Response) {
-	required_headers:=[]string{"Content-Security-Policy", "X-Frame-Options", "Strict-Transport-Security"}
-	fmt.Println("== Important Security headers ==")
-	for _,header:=range required_headers {
-		if resp.Header.Get(header)==""{
-			fmt.Println("[MISSING]", header)
-		} else {
-			fmt.Println("[OK]", header, "-", resp.Header.Get(header))
-		}
-	}
-
 	xfo := resp.Header.Get("X-Frame-Options")
 	csp := resp.Header.Get("Content-Security-Policy")
 	sts:=resp.Header.Get("Strict-Transport-Security")
@@ -54,7 +44,7 @@ func check_headers(resp *http.Response) {
 		fmt.Println("[VULNERABLE] No clickjacking protection")
 	}
 	if csp=="" {
-		fmt.Println("[VULNERABLE] vulnerable to Reflected and Stored XSS attacks")
+		fmt.Println("[FINDING] No Content-Security-Policy header - no defense-in-depth against XSS if an injection point exists")
 	}
 
 	if sts == "" {
