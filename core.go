@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func main(){
@@ -21,17 +22,6 @@ func main(){
 
 	check_headers(resp)
 
-	// //To print the headers found and the status code of the website at the url
-	// fmt.Println("Status code:", resp.Status)
-	// fmt.Println("Headers: ")
-	// for key,values := range resp.Header {
-	// 	for _,value:=range values {
-	// 		fmt.Printf("%s: %s\n",key,value)
-	// 	}
-
-	// }
-
-	// Checks the  headers if the improtant secrutiy  headers are present or permissive 
 	
 }
 
@@ -46,13 +36,29 @@ func fetchURL(url string) (*http.Response,error) {
 // Checks the  headers if the important secrutiy  headers are present or permissive 
 func check_headers(resp *http.Response) {
 	required_headers:=[]string{"Content-Security-Policy", "X-Frame-Options", "Strict-Transport-Security"}
+	fmt.Println("== Important Security headers ==")
 	for _,header:=range required_headers {
-		fmt.Println("== Important Security headers ==")
 		if resp.Header.Get(header)==""{
 			fmt.Println("[MISSING]", header)
 		} else {
 			fmt.Println("[OK]", header, "-", resp.Header.Get(header))
 		}
+	}
+
+	xfo := resp.Header.Get("X-Frame-Options")
+	csp := resp.Header.Get("Content-Security-Policy")
+	sts:=resp.Header.Get("Strict-Transport-Security")
+	hasFrameAncestors := strings.Contains(csp, "frame-ancestors")
+
+	if xfo == "" && !hasFrameAncestors {
+		fmt.Println("[VULNERABLE] No clickjacking protection")
+	}
+	if csp=="" {
+		fmt.Println("[VULNERABLE] vulnerable to Reflected and Stored XSS attacks")
+	}
+
+	if sts == "" {
+		fmt.Println("[VULNERABLE] Missing HSTS - vulnerable to SSL stripping")
 	}
 
 }
