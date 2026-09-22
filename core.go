@@ -25,6 +25,12 @@ func main(){
 	
 }
 
+type ScanResult struct {
+	ClickjackingVuln bool
+    MissingCSP       bool
+    MissingHSTS      bool
+}
+
 func fetchURL(url string) (*http.Response,error) {
 	resp, err := http.Get(url)
     if err != nil {
@@ -34,21 +40,16 @@ func fetchURL(url string) (*http.Response,error) {
 }
 
 // Checks the  headers if the important secrutiy  headers are present or permissive 
-func check_headers(resp *http.Response) {
+func check_headers(resp *http.Response) ScanResult {
 	xfo := resp.Header.Get("X-Frame-Options")
 	csp := resp.Header.Get("Content-Security-Policy")
 	sts:=resp.Header.Get("Strict-Transport-Security")
 	hasFrameAncestors := strings.Contains(csp, "frame-ancestors")
 
-	if xfo == "" && !hasFrameAncestors {
-		fmt.Println("[VULNERABLE] No clickjacking protection")
-	}
-	if csp=="" {
-		fmt.Println("[FINDING] No Content-Security-Policy header - no defense-in-depth against XSS if an injection point exists")
-	}
-
-	if sts == "" {
-		fmt.Println("[VULNERABLE] Missing HSTS - vulnerable to SSL stripping")
-	}
+	return ScanResult{
+        ClickjackingVuln: xfo == "" && !hasFrameAncestors,
+        MissingCSP:       csp == "",
+        MissingHSTS:	  sts == "",
+    }
 
 }
