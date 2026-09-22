@@ -21,17 +21,7 @@ func main(){
 	}
 	defer resp.Body.Close()
 
-	// 
-	required_headers:=[]string{"Content-Security-Policy", "X-Frame-Options", "Strict-Transport-Security"}
-	for _,header:=range required_headers {
-		if resp.Header.Get(header)==""{
-			fmt.Println("[MISSING]", header)
-		} else {
-			fmt.Println("[OK]", header, "-", resp.Header.Get(header))
-		
-		}
-	}
-	
+	//To print the headers found and the status code of the website at the url
 	fmt.Println("Status code:", resp.Status)
 	fmt.Println("Headers: ")
 	for key,values := range resp.Header {
@@ -40,6 +30,20 @@ func main(){
 		}
 
 	}
+
+	// Checks the  headers if the improtant secrutiy  headers are present or permissive 
+	required_headers:=[]string{"Content-Security-Policy", "X-Frame-Options", "Strict-Transport-Security"}
+	missing_headers:=[]string{}
+	for _,header:=range required_headers {
+		if resp.Header.Get(header)==""{
+			fmt.Println("[MISSING]", header)
+			missing_headers=append(missing_headers,header)
+		} else {
+			fmt.Println("[OK]", header, "-", resp.Header.Get(header))
+		
+		}
+	}
+	
 
 }
 
