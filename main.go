@@ -1,10 +1,10 @@
 package main
 
-import {
+import (
 	"os"
 	"fmt"
 	"flag"
-}
+)
 
 func main(){
 	// This creates a boolean flag "-e". It defaults to false.
@@ -24,6 +24,11 @@ func main(){
 	}
 	url := args[0]
 
+	fmt.Printf("Starting scan on: %s\n", url)
+	if *exploit {
+		fmt.Println("[WARNING] Active exploitation mode enabled.")
+	}
+
 	resp,err:=fetchURL(url)
 	if err!=nil {
 		fmt.Print("Error: ",err)
@@ -31,5 +36,5 @@ func main(){
 	}
 	defer resp.Body.Close()
 
-	check_headers(resp)
+	//result:=check_headers(resp)
 }
