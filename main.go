@@ -37,4 +37,6 @@ func main(){
 	defer resp.Body.Close()
 
 	//result:=check_headers(resp)
+	result:=check_XSS_vuln(url,resp)
+	fmt.Println(result)
 }

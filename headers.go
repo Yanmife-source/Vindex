@@ -10,7 +10,7 @@ import (
 func fetchURL(url string) (*http.Response,error) {
 	resp, err := http.Get(url)
     if err != nil {
-        return nil, fmt.Errorf("could not reach %s: %w", url, err)
+        return nil, fmt.Errorf("could not reach %s: %w\nStatus code: %s", url, err,resp.Status)
     }
     return resp, nil
 }
