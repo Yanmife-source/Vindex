@@ -24,13 +24,16 @@ func main(){
 	}
 	url := args[0]
 
+	//Fetch the url and checks for errors
 	resp,err:=fetchURL(url)
 	fmt.Println("Fetching the URL... ")
 	if err!=nil {
 		fmt.Print("Error: ",err)
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close()//closes the http request jsut before main() closes
+
+	res_struct:=check_headers(resp)//Checks Important security headers for 
 
 	fmt.Printf("Starting scan on: %s\n", url)
 	if *exploit {
@@ -41,14 +44,12 @@ func main(){
 		}
 		for _,result:=range results {
 			fmt.Println(result)
-		}
+		} 
+	} else if res_struct.MissingCSP {
+		fmt.Println("[INFO] Rerun with -e to attempt active XSS testing")
 	}
 
 	
-
-	res_struct:=check_headers(resp)
 	if res_struct.ClickjackingVuln{}
-	if res_struct.MissingCSP{
-		fmt.Println("")
-	}
+	
 }

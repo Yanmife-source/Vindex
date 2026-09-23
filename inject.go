@@ -4,9 +4,35 @@ import (
 	"fmt"
 	"strings"
 	"io"
+	"golang.org/x/net/html"
 	"net/http"
 	"net/url"
 )
+func find_input_fields(resp *http.Response) ([]string,error) {
+	var fields []string
+
+	tokenizer := html.NewTokenizer(resp.Body)
+
+	for {
+		tt := tokenizer.Next()
+		if tt == html.ErrorToken {
+			break // reached end of document (io.EOF, expected)
+		}
+
+		if tt == html.StartTagToken || tt == html.SelfClosingTagToken {
+			token := tokenizer.Token()
+			if token.Data == "input" {
+				for _, attr := range token.Attr {
+					if attr.Key == "name" {
+						fields = append(fields, attr.Val)
+					}
+				}
+			}
+		}
+	}
+	return fields,nil
+}
+
 
 var xss_payloads = []string{
 	`<script>alert('vindex_xss_test')</script>`,
