@@ -41,12 +41,12 @@ var xss_payloads = []string{
 	`'><svg onload=alert('vindex_xss_test')>`,
 } 
 
-var commonParams = []string{"q", "search", "query", "id", "name", "input"}
 
-func check_XSS_vuln(base_url string,resp *http.Response) ([]string,error) {
+
+func check_XSS_vuln(base_url string,resp *http.Response,input_fields []string) ([]string,error) {
 	var findings []string
 	
-	for _, param := range commonParams {
+	for _, param := range input_fields {
 		for _, payload := range xss_payloads {
 			test_url := fmt.Sprintf("%s?%s=%s", base_url, param, url.QueryEscape(payload))
 

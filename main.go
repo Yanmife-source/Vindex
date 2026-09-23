@@ -38,7 +38,12 @@ func main(){
 	fmt.Printf("Starting scan on: %s\n", url)
 	if *exploit {
 		fmt.Println("[WARNING] Active exploitation mode enabled.")
-		results,err:=check_XSS_vuln(url,resp)
+		fields,err:=find_input_fields(resp)
+		fmt.Println(fields)
+		if err!=nil {
+			fmt.Println("Error occurred:", err)
+		}
+		results,err:=check_XSS_vuln(url,resp,fields)
 		if err!=nil {
 			fmt.Println("Error occurred:", err)
 		}
