@@ -24,19 +24,31 @@ func main(){
 	}
 	url := args[0]
 
-	fmt.Printf("Starting scan on: %s\n", url)
-	if *exploit {
-		fmt.Println("[WARNING] Active exploitation mode enabled.")
-	}
-
 	resp,err:=fetchURL(url)
+	fmt.Println("Fetching the URL... ")
 	if err!=nil {
 		fmt.Print("Error: ",err)
 		return
 	}
 	defer resp.Body.Close()
 
-	//result:=check_headers(resp)
-	result:=check_XSS_vuln(url,resp)
-	fmt.Println(result)
+	fmt.Printf("Starting scan on: %s\n", url)
+	if *exploit {
+		fmt.Println("[WARNING] Active exploitation mode enabled.")
+		results,err:=check_XSS_vuln(url,resp)
+		if err!=nil {
+			fmt.Println("Error occurred:", err)
+		}
+		for _,result:=range results {
+			fmt.Println(result)
+		}
+	}
+
+	
+
+	res_struct:=check_headers(resp)
+	if res_struct.ClickjackingVuln{}
+	if res_struct.MissingCSP{
+		fmt.Println("")
+	}
 }

@@ -17,7 +17,7 @@ var xss_payloads = []string{
 
 var commonParams = []string{"q", "search", "query", "id", "name", "input"}
 
-func check_XSS_vuln(base_url string,resp *http.Response) ([]string) {
+func check_XSS_vuln(base_url string,resp *http.Response) ([]string,error) {
 	var findings []string
 	
 	for _, param := range commonParams {
@@ -37,8 +37,8 @@ func check_XSS_vuln(base_url string,resp *http.Response) ([]string) {
 		}
 	}
 	if len(findings) == 0 {
-		fmt.Println("No reflected XSS found with current payload set")
-		return nil
+		return nil,fmt.Errorf("No reflected XSS found with current payload set for URL: %q",base_url)
+		
 	}
-	return findings	
+	return findings,nil
 }
