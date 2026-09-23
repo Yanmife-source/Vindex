@@ -1,6 +1,6 @@
 # Vindex 🛡️
 
-**Vindex** (Latin for *Defender*) is a web vulnerability scanner written in Go, built incrementally — one vulnerability class at a time — while learning the language itself.
+**Vindex**  is a web vulnerability scanner written in Go, built incrementally — one vulnerability class at a time — while learning the language itself.
 
 It currently performs passive header analysis and basic active reflected-XSS testing. It is an early-stage, learning-driven project, not a finished tool.
 
@@ -24,7 +24,7 @@ go build -o vindex ./...
 
 ## Usage
 ```bash
-./vindex <target-url>
+./vindex [options] <target-url>
 ```
 
 ## Why this project exists

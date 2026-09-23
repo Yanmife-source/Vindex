@@ -38,7 +38,7 @@ func check_XSS_vuln(base_url string,resp *http.Response) ([]string) {
 	}
 	if len(findings) == 0 {
 		fmt.Println("No reflected XSS found with current payload set")
-		return  nil
+		return nil
 	}
 	return findings	
 }
