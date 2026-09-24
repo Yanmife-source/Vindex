@@ -7,6 +7,7 @@ import (
 )
 func crawl(base_url string,resp *http.Response) ([]string) {
 	var res_links []string
+	var all_links []string
 	links,_:=find_links(resp)
 	base, _ := url.Parse(base_url)
 	for _,link:=range links {
@@ -17,9 +18,10 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 		full_url := resolved.String()
 		if is_same_links(base_url,full_url) {
 			res_links=append(res_links,full_url)
+			all_links = append([]string{base_url}, res_links...)
 		}
 	}
-	return res_links
+	return all_links
 }
 
 func find_links(resp *http.Response) ([]string, error) {

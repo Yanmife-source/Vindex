@@ -13,7 +13,8 @@ import (
 // It handles finding the fields ONCE, then passes them to both XSS and SQLi.
 func RunInjectionTests(url string, resp *http.Response) {
     // 1. Find fields once
-    fields, err := find_input_fields(resp)
+	links:=crawl(url,resp)
+    fields, err := find_input_fields(links)
     if err != nil {
         fmt.Println("[!] Could not parse input fields:", err)
         return // Stop here, no fields = no injection possible
@@ -22,31 +23,40 @@ func RunInjectionTests(url string, resp *http.Response) {
     // 2. Run XSS
     fmt.Println("Testing XSS...")
     xssResults, err := check_XSS_vuln(url, resp, fields)
+	fmt.Println(xssResults)
     // handle xssResults...
 
     // 3. Run SQLi (using the exact same fields we already found!)
-    fmt.Println("Testing SQLi...")
-    sqliResults, err := check_SQLi_vuln(url, resp, fields)
+    // fmt.Println("Testing SQLi...")
+    // sqliResults, err := check_SQLi_vuln(url, resp, fields)
+	// fmt.Println(sqliResults)
     // handle sqliResults...
 }
 
-func find_input_fields(resp *http.Response) ([]string,error) {
-	var fields []string
-
-	tokenizer := html.NewTokenizer(resp.Body)
-
-	for {
-		tt := tokenizer.Next()
-		if tt == html.ErrorToken {
-			break // reached end of document (io.EOF, expected)
+func find_input_fields(links []string) (map[string][]string,error) {
+	fields:=make(map[string][]string)
+	for _,link:=range links {
+		resp,err:=http.Get(link)
+		if err!=nil{
+			continue
 		}
 
-		if tt == html.StartTagToken || tt == html.SelfClosingTagToken {
-			token := tokenizer.Token()
-			if token.Data == "input" {
-				for _, attr := range token.Attr {
-					if attr.Key == "name" {
-						fields = append(fields, attr.Val)
+		tokenizer := html.NewTokenizer(resp.Body)
+
+		for {
+			tt := tokenizer.Next()
+			if tt == html.ErrorToken {
+				break // reached end of document (io.EOF, expected)
+			}
+
+			if tt == html.StartTagToken || tt == html.SelfClosingTagToken {
+				token := tokenizer.Token()
+				if token.Data == "input" {
+					for _, attr := range token.Attr {
+						if attr.Key == "name" {
+							fields[link]=[]string{}
+							fields[link] = append(fields[link], attr.Val)
+						}
 					}
 				}
 			}
