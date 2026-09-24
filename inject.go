@@ -8,6 +8,28 @@ import (
 	"net/http"
 	"net/url"
 )
+
+// RunInjectionTests is the only function main.go needs to call.
+// It handles finding the fields ONCE, then passes them to both XSS and SQLi.
+func RunInjectionTests(url string, resp *http.Response) {
+    // 1. Find fields once
+    fields, err := find_input_fields(resp)
+    if err != nil {
+        fmt.Println("[!] Could not parse input fields:", err)
+        return // Stop here, no fields = no injection possible
+    }
+
+    // 2. Run XSS
+    fmt.Println("Testing XSS...")
+    xssResults, err := check_XSS_vuln(url, resp, fields)
+    // handle xssResults...
+
+    // 3. Run SQLi (using the exact same fields we already found!)
+    fmt.Println("Testing SQLi...")
+    sqliResults, err := check_SQLi_vuln(url, resp, fields)
+    // handle sqliResults...
+}
+
 func find_input_fields(resp *http.Response) ([]string,error) {
 	var fields []string
 
@@ -45,7 +67,7 @@ var xss_payloads = []string{
 
 func check_XSS_vuln(base_url string,resp *http.Response,input_fields []string) ([]string,error) {
 	var findings []string
-	
+
 	for _, param := range input_fields {
 		for _, payload := range xss_payloads {
 			test_url := fmt.Sprintf("%s?%s=%s", base_url, param, url.QueryEscape(payload))
@@ -63,7 +85,7 @@ func check_XSS_vuln(base_url string,resp *http.Response,input_fields []string) (
 		}
 	}
 	if len(findings) == 0 {
-		return nil,fmt.Errorf("No reflected XSS found with current payload set for URL: %q",base_url)
+		return nil,fmt.Errorf("No reflected XSS found for URL: %s",base_url)
 		
 	}
 	return findings,nil
