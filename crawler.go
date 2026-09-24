@@ -5,7 +5,22 @@ import (
 	"net/url"
 	"golang.org/x/net/html"
 )
-
+func crawl(base_url string,resp *http.Response) ([]string) {
+	var res_links []string
+	links,_:=find_links(resp)
+	base, _ := url.Parse(base_url)
+	for _,link:=range links {
+		resolved, err := base.Parse(link) // handles both relative and absolute hrefs correctly
+		if err != nil {
+    		continue// skip malformed links
+		}
+		full_url := resolved.String()
+		if is_same_links(base_url,full_url) {
+			res_links=append(res_links,full_url)
+		}
+	}
+	return res_links
+}
 
 func find_links(resp *http.Response) ([]string, error) {
 	var domains []string
