@@ -75,7 +75,7 @@ var xss_payloads = []string{
 
 
 
-func check_XSS_vuln(base_url string,resp *http.Response,input_fields []string) ([]string,error) {
+func check_XSS_vuln(base_url string,resp *http.Response,input_fields map[string][]string) ([]string,error) {
 	var findings []string
 
 	for _, param := range input_fields {
