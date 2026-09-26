@@ -39,12 +39,12 @@ func main(){
 	if *exploit {
 		fmt.Println("[WARNING] Active exploitation mode enabled.")
 		RunInjectionTests(url,resp)
-		if err!=nil {
-			fmt.Println("Error occurred:", err)
-		}
-		for _,result:=range results {
-			fmt.Println(result)
-		} 
+		// if err!=nil {
+		// 	fmt.Println("Error occurred:", err)
+		// }
+		// for _,result:=range results {
+		// 	fmt.Println(result)
+		// } 
 	} else if res_struct.MissingCSP {
 		fmt.Println("[INFO] Rerun with -e to attempt active XSS testing")
 	}

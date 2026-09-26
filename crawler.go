@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"golang.org/x/net/html"
@@ -10,6 +11,8 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 	var all_links []string
 	links,_:=find_links(resp)
 	base, _ := url.Parse(base_url)
+
+	fmt.Println("Crawling...")
 	for _,link:=range links {
 		resolved, err := base.Parse(link) // handles both relative and absolute hrefs correctly
 		if err != nil {

@@ -22,8 +22,12 @@ func RunInjectionTests(url string, resp *http.Response) {
 
     // 2. Run XSS
     fmt.Println("Testing XSS...")
-    xssResults, err := check_XSS_vuln(url, resp, fields)
+    xssResults, xssErrs := check_XSS_vuln(fields)
 	fmt.Println(xssResults)
+	if len(xssErrs)==0 {
+		fmt.Println("No reflected XSS found in URL: ",url,"or its subdomains")
+	}
+	
     // handle xssResults...
 
     // 3. Run SQLi (using the exact same fields we already found!)
@@ -35,8 +39,10 @@ func RunInjectionTests(url string, resp *http.Response) {
 
 func find_input_fields(links []string) (map[string][]string,error) {
 	fields:=make(map[string][]string)
+	init_iter:=true
+	fmt.Println("Finding input fields... ")
 	for _,link:=range links {
-		resp,err:=http.Get(link)
+		resp,err:=fetchURL(link)
 		if err!=nil{
 			continue
 		}
@@ -54,7 +60,10 @@ func find_input_fields(links []string) (map[string][]string,error) {
 				if token.Data == "input" {
 					for _, attr := range token.Attr {
 						if attr.Key == "name" {
-							fields[link]=[]string{}
+							if init_iter{
+								fields[link]=[]string{}
+								init_iter=false
+							}
 							fields[link] = append(fields[link], attr.Val)
 						}
 					}
@@ -75,30 +84,36 @@ var xss_payloads = []string{
 
 
 
-func check_XSS_vuln(base_url string,resp *http.Response,input_fields map[string][]string) ([]string,error) {
-	var findings []string
-	
-	for key, params := range input_fields {
-		for param:=range param {
-			for _, payload := range xss_payloads {
-				test_url := fmt.Sprintf("%s?%s=%s", base_url, param, url.QueryEscape(payload))
+func check_XSS_vuln(input_fields map[string][]string) (map[string][]string,[]error) {
+	var findings = map[string][]string{}
+	var err []error
 
-				body, err := io.ReadAll(resp.Body)
-				if err!=nil {
+	fmt.Println("Checking XSS vulns...")
+	for key, params := range input_fields {
+		for _,param:=range params {
+			for _, payload := range xss_payloads {
+				test_url := fmt.Sprintf("%s?%s=%s", key, param, url.QueryEscape(payload))
+
+				resp,error:=fetchURL(test_url)
+				if error!=nil {
+					continue
+				}
+				
+				body, read_err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if read_err!=nil {
 					continue
 				}
 				body_str := string(body)
 
 				if strings.Contains(body_str, payload) {
-					finding := fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param, payload, test_url)
-					findings = append(findings, finding)
+					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param, payload, test_url))
 				}
 			}
 		}
+		if len(findings[key]) == 0 {
+			err = append(err, fmt.Errorf("No reflected XSS found for URL: %s", key))
+		}
 	}
-	if len(findings) == 0 {
-		return nil,fmt.Errorf("No reflected XSS found for URL: %s",base_url)
-		
-	}
-	return findings,nil
+	return findings,err
 }
