@@ -4,13 +4,12 @@ import (
 	"os"
 	"fmt"
 	"flag"
+	"strings"
+	"io"
 )
 
 func main(){
-	err:=initSession()
-	if err!=nil{
-		fmt.Println("Error: ",err)
-	}
+	
 
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
@@ -28,6 +27,15 @@ func main(){
 		os.Exit(1)
 	}
 	url := args[0]
+
+	err:=initSession(url,"admin","password")
+	if err!=nil{
+		fmt.Println("Error: ",err)
+		return
+	}
+	respout, _ := client.Get("http://localhost:8080/vulnerabilities/xss_r/")
+	body, _ := io.ReadAll(respout.Body)
+	fmt.Println(strings.Contains(string(body), "name='name'"))
 
 	//Fetch the url and checks for errors
 	resp,err:=fetchURL(url)

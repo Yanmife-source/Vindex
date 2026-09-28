@@ -111,7 +111,7 @@ func check_XSS_vuln(input_fields map[string][]string) (map[string][]string,[]err
 				body_str := string(body)
 
 				// fmt.Println("Testing:", test_url)
-				// fmt.Println("Response snippet:", body_str)
+				fmt.Println("Response snippet:", body_str)
 				if strings.Contains(body_str, payload) {
 					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param, payload, test_url))
 				}

@@ -62,3 +62,36 @@ func is_same_links(base_url string,link_url string) (bool) {
 	}
 	return parsed_base.Hostname()==parsed_link.Hostname()
 }
+
+
+func findCSRFToken (resp *http.Response) (string,error) {
+	tokenizers:=html.NewTokenizer(resp.Body)
+	var res_token string
+	var foundHidden bool
+
+	for {
+		tt:=tokenizers.Next()
+		if tt==html.ErrorToken {
+			break
+		}
+		if tt==html.StartTagToken || tt == html.SelfClosingTagToken {
+			token := tokenizers.Token()
+			if token.Data=="input" {
+				for _,attr:=range token.Attr {
+					if attr.Key=="type" && attr.Val=="hidden"{
+						foundHidden=true
+					}
+					if attr.Key=="value"  {
+						res_token=attr.Val
+					}
+				}
+				if res_token!="" && foundHidden {
+					return res_token,nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("no hidden token field found")
+}
+
+
