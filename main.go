@@ -7,6 +7,11 @@ import (
 )
 
 func main(){
+	err:=initSession()
+	if err!=nil{
+		fmt.Println("Error: ",err)
+	}
+
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
 

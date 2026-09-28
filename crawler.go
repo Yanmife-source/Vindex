@@ -21,9 +21,9 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 		full_url := resolved.String()
 		if is_same_links(base_url,full_url) {
 			res_links=append(res_links,full_url)
-			all_links = append([]string{base_url}, res_links...)
 		}
 	}
+	all_links = append([]string{base_url}, res_links...)
 	return all_links
 }
 

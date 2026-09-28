@@ -20,12 +20,16 @@ func RunInjectionTests(url string, resp *http.Response) {
         return // Stop here, no fields = no injection possible
     }
 
+	fmt.Printf("Discovered fields: %+v\n", fields)
+	fmt.Println("Field count:", len(fields))
+
     // 2. Run XSS
     fmt.Println("Testing XSS...")
     xssResults, xssErrs := check_XSS_vuln(fields)
 	fmt.Println(xssResults)
-	if len(xssErrs)==0 {
+	if len(xssErrs)==len(links) {
 		fmt.Println("No reflected XSS found in URL: ",url,"or its subdomains")
+		fmt.Println(xssErrs)
 	}
 	
     // handle xssResults...
@@ -106,6 +110,8 @@ func check_XSS_vuln(input_fields map[string][]string) (map[string][]string,[]err
 				}
 				body_str := string(body)
 
+				// fmt.Println("Testing:", test_url)
+				// fmt.Println("Response snippet:", body_str)
 				if strings.Contains(body_str, payload) {
 					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param, payload, test_url))
 				}

@@ -8,11 +8,11 @@ import (
 
 
 func fetchURL(url string) (*http.Response,error) {
-	resp, err := http.Get(url)
-    if err != nil {
-        return nil, fmt.Errorf("could not reach %s: %w", url, err)
-    }
-    return resp, nil
+	req, err := http.NewRequest("GET",url,nil)
+    if err!=nil{
+		return nil, fmt.Errorf("could not reach %s: %w", url, err)
+	}
+	return client.Do(req)
 }
 
 type ScanResult struct {
