@@ -4,13 +4,15 @@ import (
 	"os"
 	"fmt"
 	"flag"
-	"strings"
-	"io"
 )
 
+const (
+	loginURL    = "http://localhost:8080/login.php"
+	securityURL = "http://localhost:8080/security.php"
+	dvwaUser    = "admin"
+	dvwaPass    = "password"
+)
 func main(){
-	
-
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
 
@@ -28,14 +30,18 @@ func main(){
 	}
 	url := args[0]
 
-	err:=initSession(url,"admin","password")
+	err:=initSession(loginURL,dvwaUser,dvwaPass)
 	if err!=nil{
 		fmt.Println("Error: ",err)
 		return
 	}
-	respout, _ := client.Get("http://localhost:8080/vulnerabilities/xss_r/")
-	body, _ := io.ReadAll(respout.Body)
-	fmt.Println(strings.Contains(string(body), "name='name'"))
+	
+	secErr:=setSecurityLevel(securityURL)
+	if secErr!=nil{
+		fmt.Println("Error setting the security level: ",secErr)
+		return
+	}
+	fmt.Println("Security level set successfully")
 
 	//Fetch the url and checks for errors
 	resp,err:=fetchURL(url)

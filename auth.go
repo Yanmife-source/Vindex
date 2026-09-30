@@ -22,9 +22,10 @@ func initSession(loginURL, username, password string) error {
 	csrfToken,err:=findCSRFToken(loginPage)
 	if err!=nil{
 		fmt.Println("Error: ",err)
+		return err
 	}
 
-	resp, err := client.PostForm("http://localhost:8080/login.php", url.Values{
+	resp, err := client.PostForm(loginURL, url.Values{
 		"username": {username},
 		"password": {password},
 		"Login":    {"Login"},
@@ -35,4 +36,27 @@ func initSession(loginURL, username, password string) error {
 	}
 	defer resp.Body.Close()
 	return nil
+}
+
+func setSecurityLevel(secURL string) error {
+	secPage, err := client.Get(secURL)
+	if err != nil {
+		return err
+	}
+	secToken,err:=findCSRFToken(secPage)
+	if err!=nil{
+		return err
+	}
+
+	resp,err:=client.PostForm(secURL,url.Values{
+		"security":{"low"},
+		"seclev_submit": {"Submit"},
+		"user_token": {secToken},
+	})
+	if err!=nil{
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+
 }

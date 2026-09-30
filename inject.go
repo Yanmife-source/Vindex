@@ -41,9 +41,14 @@ func RunInjectionTests(url string, resp *http.Response) {
     // handle sqliResults...
 }
 
-func find_input_fields(links []string) (map[string][]string,error) {
-	fields:=make(map[string][]string)
-	init_iter:=true
+
+type field struct {
+	Name  string
+	Value string
+}
+
+func find_input_fields(links []string) (map[string][]field,error) {
+	fields:=make(map[string][]field)
 	fmt.Println("Finding input fields... ")
 	for _,link:=range links {
 		resp,err:=fetchURL(link)
@@ -62,15 +67,18 @@ func find_input_fields(links []string) (map[string][]string,error) {
 			if tt == html.StartTagToken || tt == html.SelfClosingTagToken {
 				token := tokenizer.Token()
 				if token.Data == "input" {
+					var name, value string
 					for _, attr := range token.Attr {
 						if attr.Key == "name" {
-							if init_iter{
-								fields[link]=[]string{}
-								init_iter=false
-							}
-							fields[link] = append(fields[link], attr.Val)
+							name = attr.Val   // the VALUE of the name attribute, not attr.Key
+						}
+						if attr.Key == "value" {
+							value = attr.Val
 						}
 					}
+					if name != "" {
+						fields[link] = append(fields[link], field{Name: name, Value: value})
+								}
 				}
 			}
 		}
@@ -88,7 +96,7 @@ var xss_payloads = []string{
 
 
 
-func check_XSS_vuln(input_fields map[string][]string) (map[string][]string,[]error) {
+func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]error) {
 	var findings = map[string][]string{}
 	var err []error
 
@@ -96,7 +104,7 @@ func check_XSS_vuln(input_fields map[string][]string) (map[string][]string,[]err
 	for key, params := range input_fields {
 		for _,param:=range params {
 			for _, payload := range xss_payloads {
-				test_url := fmt.Sprintf("%s?%s=%s", key, param, url.QueryEscape(payload))
+				test_url := fmt.Sprintf("%s?%s=%s", key, param.Name, url.QueryEscape(payload))
 
 				resp,error:=fetchURL(test_url)
 				if error!=nil {
@@ -111,9 +119,11 @@ func check_XSS_vuln(input_fields map[string][]string) (map[string][]string,[]err
 				body_str := string(body)
 
 				// fmt.Println("Testing:", test_url)
-				fmt.Println("Response snippet:", body_str)
+				// if param.Name == "name" {
+				// 	fmt.Println("Snippet:", body_str[:min(1000, len(body_str))])
+				
 				if strings.Contains(body_str, payload) {
-					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param, payload, test_url))
+					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param.Name, payload, test_url))
 				}
 			}
 		}
