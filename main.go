@@ -4,6 +4,9 @@ import (
 	"os"
 	"fmt"
 	"flag"
+	"io"
+	"strings"
+	"net/url"
 )
 
 const (
@@ -28,23 +31,35 @@ func main(){
 		flag.PrintDefaults() // Automatically prints a professional help menu for your flags!
 		os.Exit(1)
 	}
-	url := args[0]
+	targetURL := args[0]
 
 	err:=initSession(loginURL,dvwaUser,dvwaPass)
 	if err!=nil{
 		fmt.Println("Error: ",err)
 		return
 	}
-	
+
+
+		
 	secErr:=setSecurityLevel(securityURL)
 	if secErr!=nil{
 		fmt.Println("Error setting the security level: ",secErr)
 		return
 	}
 	fmt.Println("Security level set successfully")
+	secResp, _ := fetchURL(securityURL)
+	body, _ := io.ReadAll(secResp.Body)
+	secResp.Body.Close()
+	fmt.Println(strings.Contains(string(body), `value="low" selected`))
+
+	u, _ := url.Parse(loginURL)
+	cookies := client.Jar.Cookies(u)
+	for _, c := range cookies {
+		fmt.Println(c.Name, "=", c.Value)
+	}
 
 	//Fetch the url and checks for errors
-	resp,err:=fetchURL(url)
+	resp,err:=fetchURL(targetURL)
 	fmt.Println("Fetching the URL... ")
 	if err!=nil {
 		fmt.Print("Error: ",err)
@@ -54,10 +69,10 @@ func main(){
 
 	res_struct:=check_headers(resp)//Checks Important security headers for 
 
-	fmt.Printf("Starting scan on: %s\n", url)
+	fmt.Printf("Starting scan on: %s\n", targetURL)
 	if *exploit {
 		fmt.Println("[WARNING] Active exploitation mode enabled.")
-		RunInjectionTests(url,resp)
+		RunInjectionTests(targetURL,resp)
 		// if err!=nil {
 		// 	fmt.Println("Error occurred:", err)
 		// }
