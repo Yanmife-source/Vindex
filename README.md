@@ -26,6 +26,17 @@ go build -o vindex ./...
 ```bash
 ./vindex [options] <target-url>
 ```
+### Confirmed Reflected XSS (DVWA)
+Vindex successfully detected and confirmed reflected XSS on DVWA's `xss_r` challenge, end-to-end: automated login, CSRF token handling, security-level configuration, crawling, form-field discovery, and payload injection, all working together against a real authenticated target.
+
+**A bug worth documenting:** for several days, the scanner reliably failed to detect a vulnerability that manual testing confirmed was there. The root cause: the crawler was following *every* same-domain link it found — including the site's own "Logout" link — which silently destroyed the authenticated session mid-crawl. Every check that ran afterward was unknowingly operating on a dead session, producing a clean-looking but meaningless "no vulnerabilities found" result.
+
+**Fix:** the crawler now explicitly excludes logout/session-destroying links from its traversal. **Lesson:** a scanner's most dangerous failure mode isn't a crash — it's a silent false negative that looks identical to a real clean scan. Worth building deliberate safeguards against destructive actions into any crawler from the start.
+
+**Run it:**
+\`\`\`bash
+go run . -e http://localhost:8080/vulnerabilities/xss_r/
+\`\`\`
 
 ## Why this project exists
 Built as a way to learn Go through a real, ongoing project rather than tutorials — each new check is also a reason to learn a new part of the language (structs, concurrency, error handling, etc.), documented as I go.

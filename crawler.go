@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"net/http"
 	"net/url"
 	"golang.org/x/net/html"
@@ -19,6 +20,9 @@ func crawl(base_url string,resp *http.Response) ([]string) {
     		continue// skip malformed links
 		}
 		full_url := resolved.String()
+		if strings.Contains(strings.ToLower(full_url), "logout") {
+			continue // never follow logout links — it kills the session for everything after it
+		}
 		if is_same_links(base_url,full_url) {
 			res_links=append(res_links,full_url)
 		}

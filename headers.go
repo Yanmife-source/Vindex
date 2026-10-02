@@ -12,7 +12,14 @@ func fetchURL(url string) (*http.Response,error) {
     if err!=nil{
 		return nil, fmt.Errorf("could not reach %s: %w", url, err)
 	}
-	return client.Do(req)
+	resp,err:=client.Do(req)
+	if err!=nil {
+		return nil,err
+	}
+	fmt.Println("Actual sent cookie header:", resp.Request.Header.Get("Cookie"))
+	return resp,nil
+
+
 }
 
 type ScanResult struct {
