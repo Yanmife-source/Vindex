@@ -3,7 +3,6 @@ import (
 	"net/http/cookiejar"
 	"net/http"
 	"net/url"
-	"fmt"
 )
 
 var client *http.Client
@@ -21,7 +20,6 @@ func initSession(loginURL, username, password string) error {
 	defer loginPage.Body.Close()
 	csrfToken,err:=findCSRFToken(loginPage)
 	if err!=nil{
-		fmt.Println("Error: ",err)
 		return err
 	}
 

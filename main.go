@@ -84,6 +84,6 @@ func main(){
 	}
 
 	
-	if res_struct.ClickjackingVuln{}
+	fmt.Println(res_struct.Cookies)
 	
 }

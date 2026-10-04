@@ -16,9 +16,7 @@ func fetchURL(url string) (*http.Response,error) {
 	if err!=nil {
 		return nil,err
 	}
-	fmt.Println("Actual sent cookie header:", resp.Request.Header.Get("Cookie"))
 	return resp,nil
-
 
 }
 
@@ -26,6 +24,10 @@ type ScanResult struct {
 	ClickjackingVuln bool
     MissingCSP       bool
     MissingHSTS      bool
+	MissingXCTO      bool
+	MissingReferrerPolicy bool
+	ServerInfo string
+	Cookies []string
 }
 
 
@@ -33,13 +35,26 @@ type ScanResult struct {
 func check_headers(resp *http.Response) ScanResult {
 	xfo := resp.Header.Get("X-Frame-Options")
 	csp := resp.Header.Get("Content-Security-Policy")
-	sts:=resp.Header.Get("Strict-Transport-Security")
+	sts := resp.Header.Get("Strict-Transport-Security")
+	xct := resp.Header.Get("X-Content-Type-Options")
+	rp := resp.Header.Get("Referrer-Policy")
+	si:=resp.Header.Get("Server")
 	hasFrameAncestors := strings.Contains(csp, "frame-ancestors")
 
-	return ScanResult{
-        ClickjackingVuln: xfo == "" && !hasFrameAncestors,
-        MissingCSP:       csp == "",
-        MissingHSTS:	  sts == "",
-    }
+	var insecureCookies []string
+	for _, c := range resp.Cookies() {
+		if !c.Secure || !c.HttpOnly {
+			insecureCookies = append(insecureCookies, c.Name)
+		}
+	}
 
+	return ScanResult{
+		ClickjackingVuln:      xfo == "" && !hasFrameAncestors,
+		MissingCSP:            csp == "",
+		MissingHSTS:           sts == "",
+		MissingXCTO:           xct == "",
+		MissingReferrerPolicy: rp == "",
+		ServerInfo: si,
+		Cookies: insecureCookies,
+	}
 }

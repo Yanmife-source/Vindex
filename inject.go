@@ -118,11 +118,11 @@ func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]erro
 				}
 				body_str := string(body)
 
-				if param.Name == "name" {
-					fmt.Println("URL:", test_url)
-					fmt.Println("Status:", resp.StatusCode)
-					fmt.Println("Body length:", len(body_str))
-				}
+				// if param.Name == "name" {
+				// 	fmt.Println("URL:", test_url)
+				// 	fmt.Println("Status:", resp.StatusCode)
+				// 	fmt.Println("Body length:", len(body_str))
+				// }
 				
 				if strings.Contains(body_str, payload) {
 					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param.Name, payload, test_url))
