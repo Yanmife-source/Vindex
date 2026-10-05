@@ -81,6 +81,7 @@ func main(){
 		fmt.Println("[WARNING] Active exploitation mode enabled.")
 		results,err:=RunInjectionTests(fields)
 		fmt.Println(results.XSS)
+		fmt.Println(results.SQLi)
 		if err!=nil{
 			fmt.Println("Error: ",err)
 		}

@@ -15,10 +15,7 @@ type InjectionResults struct {
 // RunInjectionTests is the only function main.go needs to call.
 // It handles finding the fields ONCE, then passes them to both XSS and SQLi.
 func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
-    // 1. Find fields once
-	
 
-	fmt.Printf("Discovered fields: %+v\n", fields)
 	fmt.Println("Field count:", len(fields))
 
     // 2. Run XSS
@@ -33,14 +30,17 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 		}
 	}
 	
-    // handle xssResults...
 
     // 3. Run SQLi (using the exact same fields we already found!)
-    // fmt.Println("Testing SQLi...")
-    // sqliResults, err := check_SQLi_vuln(url, resp, fields)
-	//allErrs = append(allErrs, xssErrs...)
-	// fmt.Println(sqliResults)
-    // handle sqliResults...
+    fmt.Println("Testing SQLi...")
+    sqliResults, sqliErrs := check_SQLi_vuln(fields)
+	allErrs = append(allErrs, sqliErrs...)
+	fmt.Println(sqliResults)
+	for key := range fields {
+		if len(sqliResults[key]) == 0 {
+			fmt.Println("No reflected XSS found for:", key)
+		}
+	}
 	return InjectionResults{XSS:xssResults,SQLi:sqliResults},allErrs
 }
 
@@ -131,6 +131,7 @@ func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]erro
 				
 				if strings.Contains(body_str, payload) {
 					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param.Name, payload, test_url))
+					break
 				}
 			}
 		
@@ -138,3 +139,61 @@ func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]erro
 	}
 	return findings,errs
 }
+
+var sqli_payloads = []string{
+	`'`,
+	`''`,
+	`' OR '1'='1`,
+	`' OR '1'='1' -- `,
+	`" OR "1"="1`,
+	`'; DROP TABLE users-- `,
+	`' UNION SELECT NULL-- `,
+}
+
+var sql_error_signatures = []string{
+	"you have an error in your sql syntax",
+	"warning: mysql",
+	"unclosed quotation mark",
+	"quoted string not properly terminated",
+	"sqlstate",
+	"mysql_fetch",
+	"ora-01756", // Oracle
+	"microsoft odbc",
+}
+
+func check_SQLi_vuln(input_fields map[string][]field) (map[string][]string,[]error) {
+	var findings = map[string][]string{}
+	var errs []error
+
+	fmt.Println("Checking XSS vulns...")
+	for key, params := range input_fields {
+		for _,param:=range params {
+			for _, payload := range xss_payloads {
+				test_url := fmt.Sprintf("%s?%s=%s", key, param.Name, url.QueryEscape(payload))
+
+				resp,error:=fetchURL(test_url)
+				if error!=nil {
+					errs = append(errs, fmt.Errorf("could not test %s: %w", test_url, error)) // REAL failure
+					continue
+				}
+				
+				body, readErr := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if readErr!=nil {
+					errs = append(errs, fmt.Errorf("could not read response from %s: %w", test_url, readErr)) // REAL failure
+					continue
+				}
+				bodyStr:=string(body)
+				bodyLower := strings.ToLower(bodyStr)
+				for _, sig := range sql_error_signatures {
+					if strings.Contains(bodyLower, sig) {
+						findings[key] = append(findings[key], fmt.Sprintf("[SQLi] param=%q payload=%q matched signature=%q at %s", param.Name, payload, sig, test_url))
+						break
+						 // one signature match is enough for this payload, don't log the same hit repeatedly
+					}
+				}
+			}
+		}
+	}
+	return findings,errs
+}	
