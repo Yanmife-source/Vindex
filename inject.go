@@ -27,10 +27,10 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
     xssResults, xssErrs := check_XSS_vuln(fields)
 	allErrs = append(allErrs, xssErrs...)
 	
-	if xssErrs!=nil {
-
-		fmt.Println("No reflected XSS found in URL: or its subdomains")
-		
+	for key := range fields {
+		if len(xssResults[key]) == 0 {
+			fmt.Println("No reflected XSS found for:", key)
+		}
 	}
 	
     // handle xssResults...
