@@ -6,6 +6,7 @@ import (
 	"io"
 	"golang.org/x/net/html"
 	"net/url"
+	"sync"
 )
 type InjectionResults struct {
 	XSS map[string][]string
@@ -17,29 +18,38 @@ type InjectionResults struct {
 func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 
 	fmt.Println("Field count:", len(fields))
+	fmt.Println("Discovered fields: ",fields)
 
-    // 2. Run XSS
 	var allErrs []error
-    fmt.Println("Testing XSS...")
-    xssResults, xssErrs := check_XSS_vuln(fields)
-	allErrs = append(allErrs, xssErrs...)
+	var wg sync.WaitGroup
+	var xssResults,sqliResults map[string][]string
+	var xssErrs,sqliErrs []error
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		fmt.Println("Testing XSS...")
+		xssResults, xssErrs = check_XSS_vuln(fields)
+	}()
+	go func() {
+		defer wg.Done()
+		fmt.Println("Testing SQLi...")
+		sqliResults, sqliErrs = check_SQLi_vuln(fields)
+	}()
+	wg.Wait()
+   
 	
+
+    
+	allErrs = append(xssErrs, sqliErrs...)
 	for key := range fields {
 		if len(xssResults[key]) == 0 {
 			fmt.Println("No reflected XSS found for:", key)
 		}
-	}
-	
-
-    // 3. Run SQLi (using the exact same fields we already found!)
-    fmt.Println("Testing SQLi...")
-    sqliResults, sqliErrs := check_SQLi_vuln(fields)
-	allErrs = append(allErrs, sqliErrs...)
-	fmt.Println(sqliResults)
-	for key := range fields {
 		if len(sqliResults[key]) == 0 {
-			fmt.Println("No reflected XSS found for:", key)
+			fmt.Println("No SQLi found for:", key)
 		}
+	
 	}
 	return InjectionResults{XSS:xssResults,SQLi:sqliResults},allErrs
 }
@@ -165,7 +175,7 @@ func check_SQLi_vuln(input_fields map[string][]field) (map[string][]string,[]err
 	var findings = map[string][]string{}
 	var errs []error
 
-	fmt.Println("Checking XSS vulns...")
+	fmt.Println("Checking SQLi vulns...")
 	for key, params := range input_fields {
 		for _,param:=range params {
 			for _, payload := range xss_payloads {

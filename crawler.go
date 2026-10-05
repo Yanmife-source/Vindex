@@ -13,7 +13,7 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 	var all_links []string
 	links,_:=find_links(resp)
 	base, _ := url.Parse(base_url)
-
+	
 	fmt.Println("Crawling...")
 	for _,link:=range links {
 		resolved, err := base.Parse(link) // handles both relative and absolute hrefs correctly
@@ -21,7 +21,7 @@ func crawl(base_url string,resp *http.Response) ([]string) {
     		continue// skip malformed links
 		}
 		full_url := resolved.String()
-		if strings.Contains(strings.ToLower(full_url), "logout") {
+		if strings.Contains(strings.ToLower(full_url), "logout") || strings.Contains(strings.ToLower(link), "setup.php"){
 			continue // never follow logout links — it kills the session for everything after it
 		}
 		if is_same_links(base_url,full_url) {
@@ -52,7 +52,7 @@ func find_links(resp *http.Response) ([]string, error) {
 				}
 			}
 		}
-	}
+	}	
 	return domains,nil
 }
 

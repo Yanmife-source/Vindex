@@ -71,6 +71,13 @@ func main(){
 
 	//Crawls the webpage and finds input fields there
 	links:=crawl(targetURL,resp)
+	//Include paths found in robots.txt
+	disallowedPaths, _ := checkRobots(targetURL)
+	for _, path := range disallowedPaths {
+		fullURL :=  targetURL+ path
+		links=append(links,fullURL)
+		
+	}
     fields, err := find_input_fields(links)
     if err != nil {
         fmt.Println("[!] Could not parse input fields:", err)
