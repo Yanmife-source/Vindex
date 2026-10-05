@@ -66,7 +66,7 @@ func find_input_fields(links []string) (map[string][]field,error) {
 			if tt == html.ErrorToken {
 				break // reached end of document (io.EOF, expected)
 			}
-
+			//checks for inputs tags and stores their name and value attribultes
 			if tt == html.StartTagToken || tt == html.SelfClosingTagToken {
 				token := tokenizer.Token()
 				if token.Data == "input" {
@@ -101,7 +101,7 @@ var xss_payloads = []string{
 
 func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]error) {
 	var findings = map[string][]string{}
-	var err []error
+	var errs []error
 
 	fmt.Println("Checking XSS vulns...")
 	for key, params := range input_fields {
@@ -111,12 +111,14 @@ func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]erro
 
 				resp,error:=fetchURL(test_url)
 				if error!=nil {
+					errs = append(errs, fmt.Errorf("could not test %s: %w", test_url, error)) // REAL failure
 					continue
 				}
 				
-				body, read_err := io.ReadAll(resp.Body)
+				body, readErr := io.ReadAll(resp.Body)
 				resp.Body.Close()
-				if read_err!=nil {
+				if readErr!=nil {
+					errs = append(errs, fmt.Errorf("could not read response from %s: %w", test_url, readErr)) // REAL failure
 					continue
 				}
 				body_str := string(body)
@@ -131,10 +133,8 @@ func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]erro
 					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param.Name, payload, test_url))
 				}
 			}
-		}
-		if len(findings[key]) == 0 {
-			err = append(err, fmt.Errorf("No reflected XSS found for URL: %s", key))
+		
 		}
 	}
-	return findings,err
+	return findings,errs
 }

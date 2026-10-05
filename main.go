@@ -79,7 +79,11 @@ func main(){
 	fmt.Printf("Starting scan on: %s\n", targetURL)
 	if *exploit {
 		fmt.Println("[WARNING] Active exploitation mode enabled.")
-		RunInjectionTests(links)
+		results,err:=RunInjectionTests(fields)
+		fmt.Println(results.XSS)
+		if err!=nil{
+			fmt.Println("Error: ",err)
+		}
 		// if err!=nil {
 		// 	fmt.Println("Error occurred:", err)
 		// }

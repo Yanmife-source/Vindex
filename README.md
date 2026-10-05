@@ -34,9 +34,9 @@ Vindex successfully detected and confirmed reflected XSS on DVWA's `xss_r` chall
 **Fix:** the crawler now explicitly excludes logout/session-destroying links from its traversal. **Lesson:** a scanner's most dangerous failure mode isn't a crash — it's a silent false negative that looks identical to a real clean scan. Worth building deliberate safeguards against destructive actions into any crawler from the start.
 
 **Run it:**
-\`\`\`bash
+```bash
 go run . -e http://localhost:8080/vulnerabilities/xss_r/
-\`\`\`
+```
 
 ## Why this project exists
 Built as a way to learn Go through a real, ongoing project rather than tutorials — each new check is also a reason to learn a new part of the language (structs, concurrency, error handling, etc.), documented as I go.
