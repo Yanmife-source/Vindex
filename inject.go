@@ -7,10 +7,14 @@ import (
 	"golang.org/x/net/html"
 	"net/url"
 )
+type InjectionResults struct {
+	XSS map[string][]string
+	SQLi map[string][]string
+}
 
 // RunInjectionTests is the only function main.go needs to call.
 // It handles finding the fields ONCE, then passes them to both XSS and SQLi.
-func RunInjectionTests(links []string,fields map[string][]field) {
+func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
     // 1. Find fields once
 	
 
@@ -18,12 +22,15 @@ func RunInjectionTests(links []string,fields map[string][]field) {
 	fmt.Println("Field count:", len(fields))
 
     // 2. Run XSS
+	var allErrs []error
     fmt.Println("Testing XSS...")
     xssResults, xssErrs := check_XSS_vuln(fields)
-	fmt.Println(xssResults)
-	if len(xssErrs)==len(links) {
+	allErrs = append(allErrs, xssErrs...)
+	
+	if xssErrs!=nil {
+
 		fmt.Println("No reflected XSS found in URL: or its subdomains")
-		fmt.Println(xssErrs)
+		
 	}
 	
     // handle xssResults...
@@ -31,8 +38,10 @@ func RunInjectionTests(links []string,fields map[string][]field) {
     // 3. Run SQLi (using the exact same fields we already found!)
     // fmt.Println("Testing SQLi...")
     // sqliResults, err := check_SQLi_vuln(url, resp, fields)
+	//allErrs = append(allErrs, xssErrs...)
 	// fmt.Println(sqliResults)
     // handle sqliResults...
+	return InjectionResults{XSS:xssResults,SQLi:sqliResults},allErrs
 }
 
 

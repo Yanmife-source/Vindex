@@ -69,6 +69,7 @@ func main(){
 
 	res_struct:=check_headers(resp)//Checks Important security headers for 
 
+	//Crawls the webpage and finds input fields there
 	links:=crawl(targetURL,resp)
     fields, err := find_input_fields(links)
     if err != nil {
@@ -78,7 +79,7 @@ func main(){
 	fmt.Printf("Starting scan on: %s\n", targetURL)
 	if *exploit {
 		fmt.Println("[WARNING] Active exploitation mode enabled.")
-		RunInjectionTests(links,fields)
+		RunInjectionTests(links)
 		// if err!=nil {
 		// 	fmt.Println("Error occurred:", err)
 		// }
