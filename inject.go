@@ -5,20 +5,14 @@ import (
 	"strings"
 	"io"
 	"golang.org/x/net/html"
-	"net/http"
 	"net/url"
 )
 
 // RunInjectionTests is the only function main.go needs to call.
 // It handles finding the fields ONCE, then passes them to both XSS and SQLi.
-func RunInjectionTests(url string, resp *http.Response) {
+func RunInjectionTests(links []string,fields map[string][]field) {
     // 1. Find fields once
-	links:=crawl(url,resp)
-    fields, err := find_input_fields(links)
-    if err != nil {
-        fmt.Println("[!] Could not parse input fields:", err)
-        return // Stop here, no fields = no injection possible
-    }
+	
 
 	fmt.Printf("Discovered fields: %+v\n", fields)
 	fmt.Println("Field count:", len(fields))
@@ -28,7 +22,7 @@ func RunInjectionTests(url string, resp *http.Response) {
     xssResults, xssErrs := check_XSS_vuln(fields)
 	fmt.Println(xssResults)
 	if len(xssErrs)==len(links) {
-		fmt.Println("No reflected XSS found in URL: ",url,"or its subdomains")
+		fmt.Println("No reflected XSS found in URL: or its subdomains")
 		fmt.Println(xssErrs)
 	}
 	

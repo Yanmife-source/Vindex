@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"io"
 	"net/http"
 	"net/url"
 	"golang.org/x/net/html"
@@ -99,3 +100,31 @@ func findCSRFToken (resp *http.Response) (string,error) {
 }
 
 
+func checkRobots(baseURL string) ([]string,error){
+	robotsURL := baseURL + "/robots.txt"
+	resp, err := fetchURL(robotsURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, nil // no robots.txt present, nothing to report
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var disallowed []string
+	lines := strings.Split(string(body), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "Disallow:") {
+			path := strings.TrimSpace(strings.TrimPrefix(line, "Disallow:"))
+			if path != "" {
+				disallowed = append(disallowed, path)
+			}
+		}
+	}
+	return disallowed, nil
+}
