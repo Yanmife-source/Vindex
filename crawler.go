@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"golang.org/x/net/html"
+	"log/slog"
 )
 func crawl(base_url string,resp *http.Response) ([]string) {
 	var res_links []string
@@ -14,7 +15,7 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 	links,_:=find_links(resp)
 	base, _ := url.Parse(base_url)
 	
-	fmt.Println("Crawling...")
+	slog.Info("Crawling...")
 	for _,link:=range links {
 		resolved, err := base.Parse(link) // handles both relative and absolute hrefs correctly
 		if err != nil {
@@ -29,6 +30,7 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 		}
 	}
 	all_links = append([]string{base_url}, res_links...)
+	slog.Debug("Successfully crawled the target URL web pafe")
 	return all_links
 }
 
@@ -109,6 +111,7 @@ func checkRobots(baseURL string) ([]string,error){
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
+		slog.Warn("No robots.txt found", "status_code", resp.StatusCode)
 		return nil, nil // no robots.txt present, nothing to report
 	}
 	body, err := io.ReadAll(resp.Body)

@@ -6,7 +6,8 @@ import (
 	"flag"
 	"io"
 	"strings"
-	//"net/url"
+	"log/slog"
+	"net/url"
 )
 
 const (
@@ -18,13 +19,22 @@ const (
 func main(){
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
+	verbose:=flag.Bool("v",false,"Enables verbose output")
 
 	//Parse the terminal input
 	flag.Parse() 
 
+	//Set the default log level to INFO
+	logLevel := &slog.LevelVar{}
+	logLevel.Set(slog.LevelInfo)
+
+	if *verbose {
+		logLevel.Set(slog.LevelDebug)
+	}
+
 	//Grab the URL
 	args := flag.Args() 
-	if len(args) < 1 {
+	flag.Usage = func() {
 		fmt.Println("Usage: vindex [flags] <url>")
 		fmt.Println("Example: vindex -e http://localhost:3000")
 		fmt.Println("\nAvailable flags:")
@@ -43,37 +53,39 @@ func main(){
 		
 	secErr:=setSecurityLevel(securityURL)
 	if secErr!=nil{
-		fmt.Println("Error setting the security level: ",secErr)
+		slog.Error("Failed to set security level","error",secErr)
 		return
 	} 
-	fmt.Println("Security level set successfully")
+	slog.Info("Security level set successfully")
 	secResp, _ := fetchURL(securityURL)
 	body, _ := io.ReadAll(secResp.Body)
 	secResp.Body.Close()
-	fmt.Println(strings.Contains(string(body), `value="low" selected`))
+	slog.Debug("Security level set","value",strings.Contains(string(body), `value="low" selected`))
 
-	// u, _ := url.Parse(loginURL)
-	// cookies := client.Jar.Cookies(u)
-	// for _, c := range cookies {
-	// 	fmt.Println(c.Name, "=", c.Value)
-	// }
+	//Prints all the cookies in a single clean log entry
+	u, _ := url.Parse(loginURL)
+	slog.Debug("Session cookie active","name",u.Host, "value", client.Jar.Cookies(u))
 
 	//Fetch the url and checks for errors
+	slog.Info("Fetching the URL... ")
 	resp,err:=fetchURL(targetURL)
-	fmt.Println("Fetching the URL... ")
 	if err!=nil {
-		fmt.Print("Error: ",err)
+		slog.Error("Failed the fetch target url","error",err)
 		return
 	}
 	defer resp.Body.Close()//closes the http request jsut before main() closes
 
 	res_struct:=check_headers(resp)//Checks Important security headers for 
 
+	
+	if *verbose {
+		logLevel.Set(slog.LevelDebug)
+	}
 	//Crawls the webpage and finds input fields there
 	links:=crawl(targetURL,resp)
 	//Include paths found in robots.txt
 	disallowedPaths, _ := checkRobots(targetURL)
-	fmt.Println("Checking robots.txt... ")
+	slog.Info("Checking robots.txt... ")
 	for _, path := range disallowedPaths {
 		fullURL :=  targetURL+ path
 		links=append(links,fullURL)
@@ -81,17 +93,17 @@ func main(){
 	}
     fields, err := find_input_fields(links)
     if err != nil {
-        fmt.Println("[!] Could not parse input fields:", err)
+        slog.Error("Failed to parse input fields","error", err)
     }
 
 	fmt.Printf("Starting scan on: %s\n", targetURL)
 	if *exploit {
-		fmt.Println("[WARNING] Active exploitation mode enabled.")
+		fmt.Println(" Active exploitation mode enabled.")
 		results,err:=RunInjectionTests(fields)
 		fmt.Println(results.XSS)
 		fmt.Println(results.SQLi)
 		if err!=nil{
-			fmt.Println("Error: ",err)
+			slog.Error("Failed to run Injection Vuln tests","error",err)
 		}
 		// if err!=nil {
 		// 	fmt.Println("Error occurred:", err)
@@ -99,10 +111,7 @@ func main(){
 		// for _,result:=range results {
 		// 	fmt.Println(result)
 		// } 
-	} else if res_struct.MissingCSP {
-		fmt.Println("[INFO] Rerun with -e to attempt active Vulnerability testing")
-	}
-
+	} 
 	
 	fmt.Println(res_struct.Cookies)
 	

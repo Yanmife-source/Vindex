@@ -7,6 +7,8 @@ import (
 	"golang.org/x/net/html"
 	"net/url"
 	"sync"
+	"log/slog"
+	"errors"
 )
 type InjectionResults struct {
 	XSS map[string][]string
@@ -28,12 +30,12 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		fmt.Println("Testing XSS...")
+		slog.Info("Testing XSS...")
 		xssResults, xssErrs = check_XSS_vuln(fields)
 	}()
 	go func() {
 		defer wg.Done()
-		fmt.Println("Testing SQLi...")
+		slog.Info("Testing SQLi...")
 		sqliResults, sqliErrs = check_SQLi_vuln(fields)
 	}()
 	wg.Wait()
@@ -42,6 +44,7 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 
     
 	allErrs = append(xssErrs, sqliErrs...)
+	combinedErr:=errors.Join(allErrs...)
 	for key := range fields {
 		if len(xssResults[key]) == 0 {
 			fmt.Println("No reflected XSS found for:", key)
@@ -51,6 +54,7 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 		}
 	
 	}
+	slog.Debug("Successfully ran Injection Vuln tests","error",combinedErr)
 	return InjectionResults{XSS:xssResults,SQLi:sqliResults},allErrs
 }
 
