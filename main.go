@@ -6,7 +6,7 @@ import (
 	"flag"
 	"io"
 	"strings"
-	"net/url"
+	//"net/url"
 )
 
 const (
@@ -52,11 +52,11 @@ func main(){
 	secResp.Body.Close()
 	fmt.Println(strings.Contains(string(body), `value="low" selected`))
 
-	u, _ := url.Parse(loginURL)
-	cookies := client.Jar.Cookies(u)
-	for _, c := range cookies {
-		fmt.Println(c.Name, "=", c.Value)
-	}
+	// u, _ := url.Parse(loginURL)
+	// cookies := client.Jar.Cookies(u)
+	// for _, c := range cookies {
+	// 	fmt.Println(c.Name, "=", c.Value)
+	// }
 
 	//Fetch the url and checks for errors
 	resp,err:=fetchURL(targetURL)
@@ -73,6 +73,7 @@ func main(){
 	links:=crawl(targetURL,resp)
 	//Include paths found in robots.txt
 	disallowedPaths, _ := checkRobots(targetURL)
+	fmt.Println("Checking robots.txt... ")
 	for _, path := range disallowedPaths {
 		fullURL :=  targetURL+ path
 		links=append(links,fullURL)
