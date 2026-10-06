@@ -156,7 +156,6 @@ var sqli_payloads = []string{
 	`' OR '1'='1`,
 	`' OR '1'='1' -- `,
 	`" OR "1"="1`,
-	`'; DROP TABLE users-- `,
 	`' UNION SELECT NULL-- `,
 }
 
@@ -176,10 +175,18 @@ func check_SQLi_vuln(input_fields map[string][]field) (map[string][]string,[]err
 	var errs []error
 
 	fmt.Println("Checking SQLi vulns...")
-	for key, params := range input_fields {
-		for _,param:=range params {
-			for _, payload := range xss_payloads {
-				test_url := fmt.Sprintf("%s?%s=%s", key, param.Name, url.QueryEscape(payload))
+	for key, values := range input_fields {
+		for _,param:=range values {
+			for _, payload := range sqli_payloads {
+				qs:=url.Values{}
+				for _,f:=range values{
+					if f.Name==param.Name{
+						qs.Set(f.Name,payload)
+					} else  {
+						qs.Set(f.Name,f.Value)
+					}
+				}
+				test_url := fmt.Sprintf("%s?%s", key, qs.Encode())
 
 				resp,error:=fetchURL(test_url)
 				if error!=nil {

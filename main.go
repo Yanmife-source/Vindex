@@ -45,7 +45,7 @@ func main(){
 	if secErr!=nil{
 		fmt.Println("Error setting the security level: ",secErr)
 		return
-	}
+	} 
 	fmt.Println("Security level set successfully")
 	secResp, _ := fetchURL(securityURL)
 	body, _ := io.ReadAll(secResp.Body)
@@ -99,7 +99,7 @@ func main(){
 		// 	fmt.Println(result)
 		// } 
 	} else if res_struct.MissingCSP {
-		fmt.Println("[INFO] Rerun with -e to attempt active XSS testing")
+		fmt.Println("[INFO] Rerun with -e to attempt active Vulnerability testing")
 	}
 
 	
