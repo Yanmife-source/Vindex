@@ -33,9 +33,40 @@ Vindex successfully detected and confirmed reflected XSS on DVWA's `xss_r` chall
 
 **Fix:** the crawler now explicitly excludes logout/session-destroying links from its traversal. **Lesson:** a scanner's most dangerous failure mode isn't a crash — it's a silent false negative that looks identical to a real clean scan. Worth building deliberate safeguards against destructive actions into any crawler from the start.
 
+
+### Concurrent injection testing + SQLi detection
+
+XSS and SQLi testing now run **concurrently** via goroutines instead of sequentially — `RunInjectionTests()` fires both checks off in parallel and waits for both to finish before reporting, instead of running XSS to completion and then starting SQLi.
+
+- `check_SQLi_vuln()` — structurally mirrors `check_XSS_vuln()`: sends a list of SQLi payloads against every discovered input field and checks the response body for known SQL error-message signatures (error-based detection).
+  **Status: not yet confirmed working.** No hits yet against DVWA's `sqli/` page at low security — still diagnosing whether the signature list doesn't match DVWA's actual error wording, or DVWA isn't surfacing a raw SQL error at all. Documenting this honestly rather than claiming it works.
+- `sqli_blind/` is a separate, harder problem — it shows no visible difference between a successful and failed injection, so error-string matching can never catch it by design. That'll need a genuinely different technique later (time-based: a `SLEEP()` payload + measuring response delay).
+
+**Concepts covered:** goroutines (`go func(){}()`), `sync.WaitGroup` (`Add`/`Done`/`Wait`), why result-reading has to happen *after* `Wait()` and never inside the goroutines themselves (race conditions / interleaved output).
+
 **Run it:**
 ```bash
-go run . -e http://localhost:8080/vulnerabilities/xss_r/
+go run . -e http://localhost:8080/vulnerabilities/sqli/
+```
+
+### More passive header/security checks
+
+`check_headers()` now reports on more than just clickjacking and CSP:
+
+- Missing `X-Content-Type-Options: nosniff`
+- Missing `Referrer-Policy`
+- Cookies missing the `Secure` and/or `HttpOnly` flags
+- `Server` header disclosure (e.g. leaking `Apache/2.4.25 (Debian)`)
+
+All of this is passive — no payloads sent, so it runs regardless of the `-e` flag.
+
+### robots.txt discovery
+
+`check_robots()` fetches `robots.txt` and extracts any `Disallow:` paths, surfacing pages that aren't linked anywhere in the crawlable site but are still reachable — useful for finding hidden/forgotten endpoints. Its output is meant to be merged into the crawler's discovered-links list at the call site in `main.go`, not inside `crawl()` itself, to keep crawling and robots-parsing as separate responsibilities.
+
+**Run it:**
+```bash
+go run . http://localhost:8080/
 ```
 
 ## Why this project exists
