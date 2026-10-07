@@ -34,7 +34,7 @@ func main(){
 
 	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})
 	slog.SetDefault(slog.New(handler))
-	
+
 	//Grab the URL
 	args := flag.Args() 
 	flag.Usage = func() {
@@ -48,7 +48,7 @@ func main(){
 
 	err:=initSession(loginURL,dvwaUser,dvwaPass)
 	if err!=nil{
-		fmt.Println("Error: ",err)
+		slog.Error("Failed to log in","error",err)
 		return
 	}
 
@@ -81,9 +81,6 @@ func main(){
 	res_struct:=check_headers(resp)//Checks Important security headers for 
 
 	
-	if *verbose {
-		logLevel.Set(slog.LevelDebug)
-	}
 	//Crawls the webpage and finds input fields there
 	links:=crawl(targetURL,resp)
 	//Include paths found in robots.txt
