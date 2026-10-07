@@ -29,8 +29,10 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 			continue Loop 
 			}// never follow logout links — it kills the session for everything after it
 		}
-		if is_same_links(base_url,full_url) {
+		seen:=map[string]bool{}
+		if is_same_links(base_url,full_url)&& !seen[link] {
 			res_links=append(res_links,full_url)
+			seen[link]=true
 		}
 	}
 	all_links = append([]string{base_url}, res_links...)
