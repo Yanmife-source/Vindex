@@ -64,7 +64,7 @@ type field struct {
 
 func find_input_fields(links []string) (map[string][]field,error) {
 	fields:=make(map[string][]field)
-	fmt.Println("Finding input fields... ")
+	slog.Info("Finding input fields... ")
 	for _,link:=range links {
 		resp,err:=fetchURL(link)
 		if err!=nil{

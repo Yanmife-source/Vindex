@@ -115,7 +115,7 @@ func checkRobots(baseURL string) ([]string,error){
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		slog.Warn("No robots.txt found", "status_code", resp.StatusCode)
+		slog.Info("No robots.txt found", "status_code", resp.StatusCode)
 		return nil, nil // no robots.txt present, nothing to report
 	}
 	body, err := io.ReadAll(resp.Body)
