@@ -32,6 +32,9 @@ func main(){
 		logLevel.Set(slog.LevelDebug)
 	}
 
+	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})
+	slog.SetDefault(slog.New(handler))
+	
 	//Grab the URL
 	args := flag.Args() 
 	flag.Usage = func() {
@@ -100,12 +103,12 @@ func main(){
         slog.Error("Failed to parse input fields","error", err)
     }
 
-	fmt.Printf("Starting scan on: %s\n", targetURL)
+	slog.Info("Starting scan on: ","url", targetURL)
 	if *exploit {
 		slog.Warn("ACTIVE EXPLOITATION MODE ENABLED. Payloads will be sent to the target.")
 		results,err:=RunInjectionTests(fields)
-		fmt.Println(results.XSS)
-		fmt.Println(results.SQLi)
+		slog.Debug("XSS vuln results","results",results.XSS)
+		slog.Debug("SQLi vuln results","results",results.SQLi)
 		if err!=nil{
 			slog.Error("Failed to run Injection Vuln tests","error",err)
 		}

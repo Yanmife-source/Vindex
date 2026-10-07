@@ -48,7 +48,7 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 			slog.Debug("No reflected XSS found for:","link" ,key)
 		}
 		if len(sqliResults[key]) == 0 {
-			fmt.Println("No SQLi found for:","link", key)
+			slog.Debug("No SQLi found for:","link", key)
 		}
 	
 	}
