@@ -19,8 +19,8 @@ type InjectionResults struct {
 // It handles finding the fields ONCE, then passes them to both XSS and SQLi.
 func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 
-	fmt.Println("Field count:", len(fields))
-	fmt.Println("Discovered fields: ",fields)
+	slog.Debug("Field count:","fields", len(fields))
+	slog.Debug("Discovered fields: ","fields",fields)
 
 	var allErrs []error
 	var wg sync.WaitGroup
@@ -30,12 +30,10 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		slog.Info("Testing XSS...")
 		xssResults, xssErrs = check_XSS_vuln(fields)
 	}()
 	go func() {
 		defer wg.Done()
-		slog.Info("Testing SQLi...")
 		sqliResults, sqliErrs = check_SQLi_vuln(fields)
 	}()
 	wg.Wait()
@@ -47,10 +45,10 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 	combinedErr:=errors.Join(allErrs...)
 	for key := range fields {
 		if len(xssResults[key]) == 0 {
-			fmt.Println("No reflected XSS found for:", key)
+			slog.Debug("No reflected XSS found for:","link" ,key)
 		}
 		if len(sqliResults[key]) == 0 {
-			fmt.Println("No SQLi found for:", key)
+			fmt.Println("No SQLi found for:","link", key)
 		}
 	
 	}
@@ -117,7 +115,7 @@ func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]erro
 	var findings = map[string][]string{}
 	var errs []error
 
-	fmt.Println("Checking XSS vulns...")
+	slog.Info("Checking XSS vulns...")
 	for key, params := range input_fields {
 		for _,param:=range params {
 			for _, payload := range xss_payloads {
@@ -178,7 +176,7 @@ func check_SQLi_vuln(input_fields map[string][]field) (map[string][]string,[]err
 	var findings = map[string][]string{}
 	var errs []error
 
-	fmt.Println("Checking SQLi vulns...")
+	slog.Info("Checking SQLi vulns...")
 	for key, values := range input_fields {
 		for _,param:=range values {
 			for _, payload := range sqli_payloads {

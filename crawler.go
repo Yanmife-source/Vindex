@@ -12,18 +12,22 @@ import (
 func crawl(base_url string,resp *http.Response) ([]string) {
 	var res_links []string
 	var all_links []string
+	var skipList=[]string{"csrf","captcha","logout","setup"}
 	links,_:=find_links(resp)
 	base, _ := url.Parse(base_url)
 	
 	slog.Info("Crawling...")
+	Loop:
 	for _,link:=range links {
 		resolved, err := base.Parse(link) // handles both relative and absolute hrefs correctly
 		if err != nil {
     		continue// skip malformed links
 		}
 		full_url := resolved.String()
-		if strings.Contains(strings.ToLower(full_url), "logout") || strings.Contains(strings.ToLower(full_url), "setup.php"){
-			continue // never follow logout links — it kills the session for everything after it
+		for _,s :=range skipList {
+			if strings.Contains(full_url,s){
+			continue Loop 
+			}// never follow logout links — it kills the session for everything after it
 		}
 		if is_same_links(base_url,full_url) {
 			res_links=append(res_links,full_url)

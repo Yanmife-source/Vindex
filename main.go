@@ -84,8 +84,12 @@ func main(){
 	//Crawls the webpage and finds input fields there
 	links:=crawl(targetURL,resp)
 	//Include paths found in robots.txt
-	disallowedPaths, _ := checkRobots(targetURL)
 	slog.Info("Checking robots.txt... ")
+	disallowedPaths, err := checkRobots(targetURL)
+	if err!=nil {
+		slog.Error("Couldn't check robots.txt","error",err)
+	}
+
 	for _, path := range disallowedPaths {
 		fullURL :=  targetURL+ path
 		links=append(links,fullURL)
@@ -98,7 +102,7 @@ func main(){
 
 	fmt.Printf("Starting scan on: %s\n", targetURL)
 	if *exploit {
-		fmt.Println(" Active exploitation mode enabled.")
+		slog.Warn("ACTIVE EXPLOITATION MODE ENABLED. Payloads will be sent to the target.")
 		results,err:=RunInjectionTests(fields)
 		fmt.Println(results.XSS)
 		fmt.Println(results.SQLi)
@@ -111,7 +115,9 @@ func main(){
 		// for _,result:=range results {
 		// 	fmt.Println(result)
 		// } 
-	} 
+	}  else {
+		slog.Info("Running in passive mode. No payloads will be sent.")
+	}
 	
 	fmt.Println(res_struct.Cookies)
 	
