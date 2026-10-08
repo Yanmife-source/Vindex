@@ -30,9 +30,28 @@ type ScanResult struct {
 	Cookies []string
 }
 
+func checkPageHeaders(links []string) (map[string]ScanResult,[]error) {
+	var errs []error
+	headerResults:=map[string]ScanResult{}
+	for _, link := range links {          // same crawled links used elsewhere
+		
+		response,err:=fetchURL(link)
+		if err!=nil{
+			errs=append(errs,fmt.Errorf("Could not reach URL %s:%w",link,err))
+			continue
+		}
+		defer response.Body.Close()
+		result := check_header(response)
+		
+		
+		headerResults[link] = result
+	}
+	return headerResults,errs
+
+}
 
 // Checks the  headers if the important secrutiy  headers are present or permissive 
-func check_headers(resp *http.Response) ScanResult {
+func check_header(resp *http.Response) ScanResult {
 	xfo := resp.Header.Get("X-Frame-Options")
 	csp := resp.Header.Get("Content-Security-Policy")
 	sts := resp.Header.Get("Strict-Transport-Security")
@@ -58,3 +77,30 @@ func check_headers(resp *http.Response) ScanResult {
 		Cookies: insecureCookies,
 	}
 }
+
+func headerFindings(url string, r ScanResult) []Finding {
+	var out []Finding
+	if r.ClickjackingVuln {
+		out = append(out, Finding{Type: "Clickjacking", URL: url, Param: "X-Frame-Options/CSP frame-ancestors"})
+	}
+	if r.MissingCSP {
+		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "Content-Security-Policy"})
+	}
+	if r.MissingHSTS {
+		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "Strict-Transport-Security"})
+	}
+	if r.MissingXCTO {
+		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "X-Content-Type-Options"})
+	}
+	if r.MissingReferrerPolicy {
+		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "Referrer-Policy"})
+	}
+	if r.ServerInfo != "" {
+		out = append(out, Finding{Type: "Info-Disclosure", URL: url, Param: "Server: " + r.ServerInfo})
+	}
+	for _, c := range r.Cookies {
+		out = append(out, Finding{Type: "Cookie-Flag", URL: url, Param: c})
+	}
+	return out
+}
+

@@ -8,11 +8,10 @@ import (
 	"net/url"
 	"sync"
 	"log/slog"
-	"errors"
 )
 type InjectionResults struct {
-	XSS map[string][]string
-	SQLi map[string][]string
+	XSS []Finding
+	SQLi []Finding
 }
 
 // RunInjectionTests is the only function main.go needs to call.
@@ -24,7 +23,7 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 
 	var allErrs []error
 	var wg sync.WaitGroup
-	var xssResults,sqliResults map[string][]string
+	var xssResults,sqliResults []Finding
 	var xssErrs,sqliErrs []error
 
 	wg.Add(2)
@@ -42,17 +41,16 @@ func RunInjectionTests(fields map[string][]field) (InjectionResults,[]error){
 
     
 	allErrs = append(xssErrs, sqliErrs...)
-	combinedErr:=errors.Join(allErrs...)
 	for key := range fields {
-		if len(xssResults[key]) == 0 {
+		if len(xssResults)==0  {
 			slog.Debug("No reflected XSS found for:","link" ,key)
 		}
-		if len(sqliResults[key]) == 0 {
+		if len(sqliResults) == 0 {
 			slog.Debug("No SQLi found for:","link", key)
 		}
 	
 	}
-	slog.Debug("Successfully ran Injection Vuln tests","error",combinedErr)
+	slog.Debug("Successfully ran Injection Vuln tests")
 	return InjectionResults{XSS:xssResults,SQLi:sqliResults},allErrs
 }
 
@@ -111,15 +109,24 @@ var xss_payloads = []string{
 
 
 
-func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]error) {
-	var findings = map[string][]string{}
+func check_XSS_vuln(input_fields map[string][]field) ([]Finding,[]error) {
+	var findings []Finding
 	var errs []error
 
 	slog.Info("Checking XSS vulns...")
 	for key, params := range input_fields {
 		for _,param:=range params {
 			for _, payload := range xss_payloads {
-				test_url := fmt.Sprintf("%s?%s=%s", key, param.Name, url.QueryEscape(payload))
+				qs:=url.Values{}
+				for _,f:=range params{
+					if f.Name==param.Name{
+						qs.Set(f.Name,payload)
+					} else  {
+						qs.Set(f.Name,f.Value)
+					}
+				}
+				test_url := fmt.Sprintf("%s?%s", key, qs.Encode())
+
 
 				resp,error:=fetchURL(test_url)
 				if error!=nil {
@@ -140,9 +147,12 @@ func check_XSS_vuln(input_fields map[string][]field) (map[string][]string,[]erro
 				// 	fmt.Println("Status:", resp.StatusCode)
 				// 	fmt.Println("Body length:", len(body_str))
 				// }
-				
+				sig:=fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param.Name, payload, test_url)
 				if strings.Contains(body_str, payload) {
-					findings[key] = append(findings[key],fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param.Name, payload, test_url))
+					findings = append(findings, Finding{
+						Type: "SQLi", URL: key, Param: param.Name,
+						Payload: payload, Signature: sig,
+					})
 					break
 				}
 			}
@@ -172,8 +182,8 @@ var sql_error_signatures = []string{
 	"microsoft odbc",
 }
 
-func check_SQLi_vuln(input_fields map[string][]field) (map[string][]string,[]error) {
-	var findings = map[string][]string{}
+func check_SQLi_vuln(input_fields map[string][]field) ([]Finding,[]error) {
+	var findings []Finding
 	var errs []error
 
 	slog.Info("Checking SQLi vulns...")
@@ -206,7 +216,10 @@ func check_SQLi_vuln(input_fields map[string][]field) (map[string][]string,[]err
 				bodyLower := strings.ToLower(bodyStr)
 				for _, sig := range sql_error_signatures {
 					if strings.Contains(bodyLower, sig) {
-						findings[key] = append(findings[key], fmt.Sprintf("[SQLi] param=%q payload=%q matched signature=%q at %s", param.Name, payload, sig, test_url))
+						findings = append(findings, Finding{
+							Type: "SQLi", URL: key, Param: param.Name,
+							Payload: payload, Signature: sig,
+						})
 						break
 						 // one signature match is enough for this payload, don't log the same hit repeatedly
 					}

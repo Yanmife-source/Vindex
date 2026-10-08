@@ -8,6 +8,7 @@ import (
 	"strings"
 	"log/slog"
 	"net/url"
+	"errors"
 )
 
 const (
@@ -16,6 +17,9 @@ const (
 	dvwaUser    = "admin"
 	dvwaPass    = "password"
 )
+
+var allFindings []Finding
+
 func main(){
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
@@ -78,8 +82,6 @@ func main(){
 	}
 	defer resp.Body.Close()//closes the http request jsut before main() closes
 
-	res_struct:=check_headers(resp)//Checks Important security headers for 
-
 	
 	//Crawls the webpage and finds input fields there
 	links:=crawl(targetURL,resp)
@@ -101,14 +103,22 @@ func main(){
     }
 
 	slog.Info("Starting scan on: ","url", targetURL)
+	allHeaderResults,errs:=checkPageHeaders((links))
+	if errs!=nil{
+		allErrs:=errors.Join(errs...)
+		slog.Error("Failed to Check Headers","error",allErrs)
+	}
 	if *exploit {
 		slog.Warn("ACTIVE EXPLOITATION MODE ENABLED. Payloads will be sent to the target.")
 		results,err:=RunInjectionTests(fields)
 		slog.Debug("XSS vuln results","results",results.XSS)
 		slog.Debug("SQLi vuln results","results",results.SQLi)
 		if err!=nil{
-			slog.Error("Failed to run Injection Vuln tests","error",err)
+			combinedErr:=errors.Join(err...)
+			slog.Error("Failed to run Injection Vuln tests","error",combinedErr)
 		}
+		allFindings = append(allFindings, results.XSS...)
+		allFindings = append(allFindings, results.SQLi...)
 		// if err!=nil {
 		// 	fmt.Println("Error occurred:", err)
 		// }
@@ -118,7 +128,11 @@ func main(){
 	}  else {
 		slog.Info("Running in passive mode. No payloads will be sent.")
 	}
+	for url, result := range allHeaderResults { // whatever check_headers returned per-page
+		allFindings = append(allFindings, headerFindings(url, result)...)
+	}
+
+	printReport(allFindings)
 	
-	fmt.Println(res_struct.Cookies)
 	
 }
