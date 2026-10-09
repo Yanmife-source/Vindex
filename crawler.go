@@ -13,6 +13,7 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 	var res_links []string
 	var all_links []string
 	var skipList=[]string{"csrf","captcha","logout","setup"}
+	var seen=make(map[string]bool)
 	links,_:=find_links(resp)
 	base, _ := url.Parse(base_url)
 	
@@ -29,14 +30,14 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 			continue Loop 
 			}// never follow logout links — it kills the session for everything after it
 		}
-		seen:=map[string]bool{}
-		if is_same_links(base_url,full_url)&& !seen[full_url] {
+		
+		if is_same_links(base_url,full_url) && !seen[full_url] {
 			res_links=append(res_links,full_url)
 			seen[full_url]=true
 		}
 	}
 	all_links = append([]string{base_url}, res_links...)
-	slog.Debug("Successfully crawled the target URL web pafe")
+	slog.Debug("Successfully crawled the target URL","url",base_url)
 	return all_links
 }
 
