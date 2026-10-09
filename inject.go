@@ -150,7 +150,7 @@ func check_XSS_vuln(input_fields map[string][]field) ([]Finding,[]error) {
 				sig:=fmt.Sprintf("[REFLECTED XSS] param=%q payload=%q at %s", param.Name, payload, test_url)
 				if strings.Contains(body_str, payload) {
 					findings = append(findings, Finding{
-						Type: "SQLi", URL: key, Param: param.Name,
+						Type: "XSS", URL: key, Param: param.Name,
 						Payload: payload, Signature: sig,
 					})
 					break
