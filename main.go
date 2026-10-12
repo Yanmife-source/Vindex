@@ -84,7 +84,7 @@ func main(){
 
 	
 	//Crawls the webpage and finds input fields there
-	links:=crawl(targetURL,resp)
+	links:=crawl(resp)
 	//Include paths found in robots.txt
 	slog.Info("Checking robots.txt... ")
 	disallowedPaths, err := checkRobots(targetURL)
@@ -113,12 +113,14 @@ func main(){
 		results,err:=RunVulnTests(fields)
 		slog.Debug("XSS vuln results","results",results.XSS)
 		slog.Debug("SQLi vuln results","results",results.SQLi)
+		slog.Debug("CSRF vuln results","results",results.CSRF)
 		if err!=nil{
 			combinedErr:=errors.Join(err...)
 			slog.Error("Failed to run Injection Vuln tests","error",combinedErr)
 		}
 		allFindings = append(allFindings, results.XSS...)
 		allFindings = append(allFindings, results.SQLi...)
+		allFindings = append(allFindings, results.CSRF...)
 		// if err!=nil {
 		// 	fmt.Println("Error occurred:", err)
 		// }

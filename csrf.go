@@ -1,8 +1,9 @@
 package main
 
 import (
-	"io"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -10,7 +11,7 @@ import (
 
 func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {var findings []Finding
 	var errs []error
-
+	slog.Info(("Checking CSRF vulns..."))
 	for key, field := range fields {
 		tokenField, hasToken := findTokenField(field)
 		if !hasToken {

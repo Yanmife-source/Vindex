@@ -9,14 +9,21 @@ import (
 	"golang.org/x/net/html"
 	"log/slog"
 )
-func crawl(base_url string,resp *http.Response) ([]string) {
+func crawl(resp *http.Response) ([]string) {
 	var res_links []string
 	var all_links []string
-	var skipList=[]string{"csrf","captcha","logout","setup"}
+	var skipList=[]string{"logout","setup"}
 	var seen=make(map[string]bool)
-	links,_:=find_links(resp)
-	base, _ := url.Parse(base_url)
+	links,base_url,_:=find_links(resp)
+	base:=resp.Request.URL
 	
+
+	if base_url != "" {
+		if parsedBase, err := base.Parse(base_url); err == nil {
+			base = parsedBase
+		}
+	}
+	pageURL:=base.String()
 	slog.Info("Crawling...")
 	Loop:
 	for _,link:=range links {
@@ -31,18 +38,19 @@ func crawl(base_url string,resp *http.Response) ([]string) {
 			}// never follow logout links — it kills the session for everything after it
 		}
 		
-		if is_same_links(base_url,full_url) && !seen[full_url] {
+		if is_same_links(pageURL,full_url) && !seen[full_url] {
 			res_links=append(res_links,full_url)
 			seen[full_url]=true
 		}
 	}
-	all_links = append([]string{base_url}, res_links...)
-	slog.Debug("Successfully crawled the target URL","url",base_url)
+	all_links = append([]string{pageURL}, res_links...)
+	slog.Debug("Successfully crawled the target URL","url",pageURL)
 	return all_links
 }
 
-func find_links(resp *http.Response) ([]string, error) {
+func find_links(resp *http.Response) ([]string,string ,error) {
 	var domains []string
+	var baseURL string
 
 	tokenizers:=html.NewTokenizer(resp.Body)
 
@@ -53,16 +61,24 @@ func find_links(resp *http.Response) ([]string, error) {
 		}
 		if tt==html.StartTagToken {
 			token := tokenizers.Token()
-			if token.Data=="a" {
+			switch token.Data {
+			case "a":
 				for _,attr:=range token.Attr {
 					if attr.Key=="href"{
 						domains=append(domains,attr.Val)
 					}
 				}
-			}
+			case "base": 
+				for _,attr:=range token.Attr {
+					if attr.Key=="href"{
+						baseURL=attr.Val
+					}
+				}
+				
+			} 
 		}
 	}	
-	return domains,nil
+	return domains,baseURL,nil
 }
 
 func is_same_links(base_url string,link_url string) (bool) {
