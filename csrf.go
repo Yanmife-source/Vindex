@@ -8,7 +8,26 @@ import (
 	"strings"
 )
 
-func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {}
+func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {var findings []Finding
+	var errs []error
+
+	for key, field := range fields {
+		tokenField, hasToken := findTokenField(field)
+		if !hasToken {
+			continue
+		}
+
+		finding, err := testCSRFOnPage(key, field, tokenField)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if finding != nil {
+			findings = append(findings, *finding)
+		}
+	}
+	return findings, errs
+}
 func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,error){
 	var allErrs []error
 	realParams := buildParams(field) // all fields including real token, as you already do for SQLi/XSS
@@ -27,7 +46,7 @@ func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,erro
 
 	// Step 2: same params, but strip/garble the token field
 	tamperedParams := buildParams(field)
-	tamperedParams.Set("user_token", "invalid_or_missing")
+	tamperedParams.Set("tokenfield", "invalid_or_missing")
 
 	tamperedURL:=link + "?" + tamperedParams.Encode()
 	resp2, err := fetchURL(tamperedURL)
