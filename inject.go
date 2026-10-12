@@ -12,6 +12,7 @@ import (
 type VulnResults struct {
 	XSS []Finding
 	SQLi []Finding
+	CSRF []Finding
 }
 
 // RunInjectionTests is the only function main.go needs to call.
@@ -22,6 +23,7 @@ func RunVulnTests(fields map[string][]field) (VulnResults,[]error){
 	slog.Debug("Discovered fields: ","fields",fields)
 
 	var allErrs []error
+	var vulnErrs []error
 	var wg sync.WaitGroup
 	var xssResults,sqliResults,csrfResults []Finding
 	var xssErrs,sqliErrs,csrfErrs []error
@@ -44,7 +46,8 @@ func RunVulnTests(fields map[string][]field) (VulnResults,[]error){
 	
 
     
-	allErrs = append(xssErrs, sqliErrs...)
+	vulnErrs = append(xssErrs,sqliErrs...)
+	allErrs=append(vulnErrs,csrfErrs...)
 	for key := range fields {
 		if len(xssResults)==0  {
 			slog.Debug("No reflected XSS found for:","link" ,key)
@@ -55,7 +58,7 @@ func RunVulnTests(fields map[string][]field) (VulnResults,[]error){
 	
 	}
 	slog.Debug("Successfully ran Injection Vuln tests")
-	return VulnResults{XSS:xssResults,SQLi:sqliResults},allErrs
+	return VulnResults{XSS:xssResults,SQLi:sqliResults,CSRF:csrfResults},allErrs
 }
 
 

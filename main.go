@@ -110,7 +110,7 @@ func main(){
 	}
 	if *exploit {
 		slog.Warn("ACTIVE EXPLOITATION MODE ENABLED. Payloads will be sent to the target.")
-		results,err:=RunVulnTests(targetURL,fields)
+		results,err:=RunVulnTests(fields)
 		slog.Debug("XSS vuln results","results",results.XSS)
 		slog.Debug("SQLi vuln results","results",results.SQLi)
 		if err!=nil{
