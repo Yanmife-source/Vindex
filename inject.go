@@ -122,6 +122,7 @@ func check_XSS_vuln(input_fields map[string][]field) ([]Finding,[]error) {
 
 	slog.Info("Checking XSS vulns...")
 	for key, params := range input_fields {
+		if strings.Contains(key,"csrf") || strings.Contains(key,"captcha") { continue }
 		for _,param:=range params {
 			for _, payload := range xss_payloads {
 				qs:=url.Values{}
@@ -195,6 +196,7 @@ func check_SQLi_vuln(input_fields map[string][]field) ([]Finding,[]error) {
 
 	slog.Info("Checking SQLi vulns...")
 	for key, values := range input_fields {
+		if strings.Contains(key,"csrf") || strings.Contains(key,"captcha") { continue }
 		for _,param:=range values {
 			for _, payload := range sqli_payloads {
 				qs:=url.Values{}

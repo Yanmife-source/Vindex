@@ -8,42 +8,39 @@ import (
 	"strings"
 )
 
-func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {
-	var findings []Finding
+func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {}
+func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,error){
 	var allErrs []error
-	for link,field:=range fields {
-		realParams := buildParams(field) // all fields including real token, as you already do for SQLi/XSS
+	realParams := buildParams(field) // all fields including real token, as you already do for SQLi/XSS
 
-		ogURL:=link + "?" + realParams.Encode()
-		resp1, err := fetchURL(ogURL)
-		if err != nil { 
-			allErrs=append(allErrs, fmt.Errorf("Couldn't reach %s:%w",ogURL,err))
-		}
-		defer resp1.Body.Close()
-		legit := responseIndicatesSuccess(resp1) // whatever marks "password changed" on DVWA
-
-		if !legit {
-			continue // form didn't even work normally, can't test meaningfully
-		}
-
-		// Step 2: same params, but strip/garble the token field
-		tamperedParams := buildParams(field)
-		tamperedParams.Set("user_token", "invalid_or_missing")
-
-		tamperedURL:=link + "?" + tamperedParams.Encode()
-		resp2, err := fetchURL(tamperedURL)
-		if err != nil {
-			allErrs=append(allErrs,  fmt.Errorf("Couldn't reach %s:%w",tamperedURL,err))
-			}
-		defer resp2.Body.Close()
-		stillWorks := responseIndicatesSuccess(resp2)
-
-		if stillWorks {
-			findings=append(findings,Finding{Type: "CSRF", URL: link, Param: "user_token"})
-		}
-		
+	ogURL:=link + "?" + realParams.Encode()
+	resp1, err := fetchURL(ogURL)
+	if err != nil { 
+		allErrs=append(allErrs, fmt.Errorf("Couldn't reach %s:%w",ogURL,err))
 	}
-	return findings,allErrs
+	resp1.Body.Close()
+	legit := responseIndicatesSuccess(resp1) // whatever marks "password changed" on DVWA
+
+	if !legit {
+		return nil,nil// form didn't even work normally, can't test meaningfully
+	}
+
+	// Step 2: same params, but strip/garble the token field
+	tamperedParams := buildParams(field)
+	tamperedParams.Set("user_token", "invalid_or_missing")
+
+	tamperedURL:=link + "?" + tamperedParams.Encode()
+	resp2, err := fetchURL(tamperedURL)
+	if err != nil {
+		return nil, fmt.Errorf("Couldn't reach %s:%w",tamperedURL,err)
+		}
+	resp2.Body.Close()
+	stillWorks := responseIndicatesSuccess(resp2)
+
+	if stillWorks {
+		return &Finding{Type: "CSRF", URL: link, Param: tokenfield},nil
+	}
+	return nil,nil
 }
 
 
@@ -61,4 +58,13 @@ func responseIndicatesSuccess(response *http.Response) bool {
 	if err!=nil{ return false}
 	body_str:=string(body)
 	return strings.Contains(strings.ToLower(body_str), "password changed")
+}
+
+func findTokenField(fields []field) (string, bool) {
+	for _, f := range fields {
+		if strings.Contains(strings.ToLower(f.Name), "token") {
+			return f.Name, true
+		}
+	}
+	return "", false
 }
