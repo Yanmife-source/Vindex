@@ -37,7 +37,7 @@ func RunVulnTests(fields map[string][]field) (InjectionResults,[]error){
 	}()
 	go func() {
 		defer wg.Done()
-		csrfResults,csrfErrs=check_CSRF_vuln(fields)
+		csrfResults,csrfErrs = check_CSRF_vuln(fields)
 	}()
 	wg.Wait()
    
