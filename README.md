@@ -9,9 +9,6 @@ It currently performs passive header analysis and basic active reflected-XSS tes
 - **Reflected XSS testing:** sends a set of test payloads to common parameter names and checks for unescaped reflection in the response.
 
 ## Planned
-- Structured findings report (not just console output)
-- `-e` flag to gate active exploitation attempts separately from passive detection
-- Concurrent scanning (goroutines) for faster multi-check runs
 - Additional checks: SQLi, IDOR, open redirect, directory exposure
 - Headless-browser-based checks for SPA/JS-rendered content and DOM XSS
 
