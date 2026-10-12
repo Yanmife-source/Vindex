@@ -29,13 +29,12 @@ func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {var finding
 	return findings, errs
 }
 func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,error){
-	var allErrs []error
 	realParams := buildParams(field) // all fields including real token, as you already do for SQLi/XSS
 
 	ogURL:=link + "?" + realParams.Encode()
 	resp1, err := fetchURL(ogURL)
 	if err != nil { 
-		allErrs=append(allErrs, fmt.Errorf("Couldn't reach %s:%w",ogURL,err))
+		return nil, fmt.Errorf("Couldn't reach %s:%w",ogURL,err)
 	}
 	resp1.Body.Close()
 	legit := responseIndicatesSuccess(resp1) // whatever marks "password changed" on DVWA
@@ -46,7 +45,7 @@ func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,erro
 
 	// Step 2: same params, but strip/garble the token field
 	tamperedParams := buildParams(field)
-	tamperedParams.Set("tokenfield", "invalid_or_missing")
+	tamperedParams.Set(tokenfield, "invalid_or_missing")
 
 	tamperedURL:=link + "?" + tamperedParams.Encode()
 	resp2, err := fetchURL(tamperedURL)
