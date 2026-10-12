@@ -23,7 +23,6 @@ func RunVulnTests(fields map[string][]field) (VulnResults,[]error){
 	slog.Debug("Discovered fields: ","fields",fields)
 
 	var allErrs []error
-	var vulnErrs []error
 	var wg sync.WaitGroup
 	var xssResults,sqliResults,csrfResults []Finding
 	var xssErrs,sqliErrs,csrfErrs []error
@@ -46,22 +45,33 @@ func RunVulnTests(fields map[string][]field) (VulnResults,[]error){
 	
 
     
-	vulnErrs = append(xssErrs,sqliErrs...)
-	allErrs=append(vulnErrs,csrfErrs...)
+	allErrs=append(allErrs,xssErrs...)
+	allErrs=append(allErrs,sqliErrs...)
+	allErrs=append(allErrs,csrfErrs...)
+	
+	xssSet:=toURLSet(xssResults)
+	sqliSet:=toURLSet(sqliResults)
+
 	for key := range fields {
-		if len(xssResults)==0  {
+		if !xssSet[key] {
 			slog.Debug("No reflected XSS found for:","link" ,key)
 		}
-		if len(sqliResults) == 0 {
+		if !sqliSet[key] {
 			slog.Debug("No SQLi found for:","link", key)
 		}
-	
+		
 	}
 	slog.Debug("Successfully ran Injection Vuln tests")
 	return VulnResults{XSS:xssResults,SQLi:sqliResults,CSRF:csrfResults},allErrs
 }
 
-
+func toURLSet(findings []Finding) map[string]bool {
+	set := map[string]bool{}
+	for _, f := range findings {
+		set[f.URL] = true
+	}
+	return set
+}
 type field struct {
 	Name  string
 	Value string
