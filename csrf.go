@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-func check_CSRF_vuln(formURL string,fields []field) (*Finding,error) {
+func check_CSRF_vuln(formURL string,fields []field) ([]Finding,error) {
+	var findings []Finding
 	realParams := buildParams(fields) // all fields including real token, as you already do for SQLi/XSS
 
 	resp1, err := fetchURL(formURL + "?" + realParams.Encode())
@@ -29,7 +30,8 @@ func check_CSRF_vuln(formURL string,fields []field) (*Finding,error) {
 	stillWorks := responseIndicatesSuccess(resp2)
 
 	if stillWorks {
-		return &Finding{Type: "CSRF", URL: formURL, Param: "user_token"}, nil
+		findings=append(findings,Finding{Type: "CSRF", URL: formURL, Param: "user_token"})
+		return findings,nil
 	}
 	return nil, nil
 }
