@@ -23,7 +23,7 @@ func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {
 		legit := responseIndicatesSuccess(resp1) // whatever marks "password changed" on DVWA
 
 		if !legit {
-			return nil, nil // form didn't even work normally, can't test meaningfully
+			continue // form didn't even work normally, can't test meaningfully
 		}
 
 		// Step 2: same params, but strip/garble the token field
@@ -40,7 +40,6 @@ func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {
 
 		if stillWorks {
 			findings=append(findings,Finding{Type: "CSRF", URL: link, Param: "user_token"})
-			return findings,nil
 		}
 		
 	}

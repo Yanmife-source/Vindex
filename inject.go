@@ -9,14 +9,14 @@ import (
 	"sync"
 	"log/slog"
 )
-type InjectionResults struct {
+type VulnResults struct {
 	XSS []Finding
 	SQLi []Finding
 }
 
 // RunInjectionTests is the only function main.go needs to call.
 // It handles finding the fields ONCE, then passes them to both XSS and SQLi.
-func RunVulnTests(fields map[string][]field) (InjectionResults,[]error){
+func RunVulnTests(fields map[string][]field) (VulnResults,[]error){
 
 	slog.Debug("Field count:","fields", len(fields))
 	slog.Debug("Discovered fields: ","fields",fields)
@@ -37,7 +37,7 @@ func RunVulnTests(fields map[string][]field) (InjectionResults,[]error){
 	}()
 	go func() {
 		defer wg.Done()
-		csrfResults,csrfErrs = check_CSRF_vuln(fields)
+		csrfResults, csrfErrs = check_CSRF_vuln(fields)
 	}()
 	wg.Wait()
    
@@ -55,7 +55,7 @@ func RunVulnTests(fields map[string][]field) (InjectionResults,[]error){
 	
 	}
 	slog.Debug("Successfully ran Injection Vuln tests")
-	return InjectionResults{XSS:xssResults,SQLi:sqliResults},allErrs
+	return VulnResults{XSS:xssResults,SQLi:sqliResults},allErrs
 }
 
 
