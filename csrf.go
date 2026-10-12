@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -9,10 +10,14 @@ import (
 
 func check_CSRF_vuln(formURL string,fields []field) ([]Finding,error) {
 	var findings []Finding
+	var allErrs []error
 	realParams := buildParams(fields) // all fields including real token, as you already do for SQLi/XSS
 
-	resp1, err := fetchURL(formURL + "?" + realParams.Encode())
-	if err != nil { return nil, err }
+	ogURL:=formURL + "?" + realParams.Encode()
+	resp1, err := fetchURL(ogURL)
+	if err != nil { 
+		allErrs=append(allErrs, fmt.Errorf("Couldn't reach %s:%w",ogURL,err))
+	}
 	defer resp1.Body.Close()
 	legit := responseIndicatesSuccess(resp1) // whatever marks "password changed" on DVWA
 
@@ -24,8 +29,11 @@ func check_CSRF_vuln(formURL string,fields []field) ([]Finding,error) {
 	tamperedParams := buildParams(fields)
 	tamperedParams.Set("user_token", "invalid_or_missing")
 
-	resp2, err := fetchURL(formURL + "?" + tamperedParams.Encode())
-	if err != nil { return nil, err }
+	tamperedURL:=formURL + "?" + tamperedParams.Encode()
+	resp2, err := fetchURL(tamperedURL)
+	if err != nil {
+		allErrs=append(allErrs,  fmt.Errorf("Couldn't reach %s:%w",tamperedURL,err))
+		}
 	defer resp2.Body.Close()
 	stillWorks := responseIndicatesSuccess(resp2)
 
