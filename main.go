@@ -24,6 +24,7 @@ func main(){
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
 	verbose:=flag.Bool("v",false,"Enables verbose output")
+	depth:=flag.Int("depth",3,"Maximum depth for recursive crawling")
 
 	//Parse the terminal input
 	flag.Parse() 
@@ -84,7 +85,7 @@ func main(){
 
 	
 	//Crawls the webpage and finds input fields there
-	links:=crawl(resp)
+	links:=crawlSite(targetURL,*depth)
 	//Include paths found in robots.txt
 	slog.Info("Checking robots.txt... ")
 	disallowedPaths, err := checkRobots(targetURL)
@@ -130,10 +131,11 @@ func main(){
 	}  else {
 		slog.Info("Running in passive mode. No payloads will be sent.")
 	}
+	var allHeaderFindings []Finding
 	for url, result := range allHeaderResults { // whatever check_headers returned per-page
-		allFindings = append(allFindings, headerFindings(url, result)...)
+		allHeaderFindings = append(allHeaderFindings, headerFindings(url, result)...)
 	}
-
+	printReport(allHeaderFindings)
 	printReport(allFindings)
 	
 	
