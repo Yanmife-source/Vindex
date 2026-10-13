@@ -9,6 +9,40 @@ import (
 	"golang.org/x/net/html"
 	"log/slog"
 )
+func crawlSite(startURL string, maxDepth int) []string {
+	type queueItem struct {
+		url   string
+		depth int
+	}
+	queue := []queueItem{{startURL, 0}}
+	seen := map[string]bool{startURL: true}
+	var allLinks []string
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		allLinks = append(allLinks, current.url)
+
+		if current.depth >= maxDepth {
+			continue
+		}
+
+		resp, err := fetchURL(current.url)
+		if err != nil {
+			continue
+		}
+		pageLinks := crawl(resp) // your existing single-page logic, reused as-is
+		resp.Body.Close()
+
+		for _, link := range pageLinks {
+			if !seen[link] {
+				seen[link] = true
+				queue = append(queue, queueItem{link, current.depth + 1})
+			}
+		}
+	}
+	return allLinks
+}
 func crawl(resp *http.Response) ([]string) {
 	var res_links []string
 	var all_links []string
