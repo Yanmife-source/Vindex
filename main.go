@@ -131,13 +131,11 @@ func main(){
 	}  else {
 		slog.Info("Running in passive mode. No payloads will be sent.")
 	}
-	var allHeaderFindings []Finding
 	for url, result := range allHeaderResults { // whatever check_headers returned per-page
-		allHeaderFindings = append(allHeaderFindings, headerFindings(url, result)...)
+		allFindings = append(allFindings, headerFindings(url, result)...)
 	}
-	fmt.Println("====HEADERS====")
-	printReport(allHeaderFindings)
-	printReport(allFindings)
+
+	printReport(allFindings,len(links),true)
 	
 	
 }
