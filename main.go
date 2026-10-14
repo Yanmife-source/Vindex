@@ -135,6 +135,7 @@ func main(){
 	for url, result := range allHeaderResults { // whatever check_headers returned per-page
 		allHeaderFindings = append(allHeaderFindings, headerFindings(url, result)...)
 	}
+	fmt.Println("====HEADERS====")
 	printReport(allHeaderFindings)
 	printReport(allFindings)
 	
