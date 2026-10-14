@@ -1,77 +1,140 @@
-# Vindex 🛡️
+# Vindex
 
-**Vindex**  is a web vulnerability scanner written in Go, built incrementally — one vulnerability class at a time — while learning the language itself.
+A web vulnerability scanner written in Go. Built one vulnerability class at a time, as a hands-on way to learn the language (docs, trial and error, and debugging real problems, no tutorials).
 
-It currently performs passive header analysis and basic active reflected-XSS testing. It is an early-stage, learning-driven project, not a finished tool.
+Vindex logs into a target, crawls it, discovers input fields, runs passive security-header analysis on every page it finds, and optionally runs active injection tests. It is developed and tested against [DVWA](https://github.com/digininja/DVWA) running locally. It is an early-stage, learning-driven project, not a production scanner.
 
-## Current Features
-- **Security header analysis:** flags missing `Content-Security-Policy`, `X-Frame-Options`, and `Strict-Transport-Security`, and reports what each absence means (e.g. clickjacking exposure, weaker XSS defense-in-depth, SSL-stripping risk).
-- **Reflected XSS testing:** sends a set of test payloads to common parameter names and checks for unescaped reflection in the response.
+## Features
 
-## Planned
-- Additional checks: SQLi, IDOR, open redirect, directory exposure
-- Headless-browser-based checks for SPA/JS-rendered content and DOM XSS
+### Passive checks (always on)
+Run on **every crawled page**, not just the entry point. No payloads are sent.
+
+- Clickjacking exposure (`X-Frame-Options` / CSP `frame-ancestors`)
+- Missing `Content-Security-Policy`
+- Missing `Strict-Transport-Security`
+- Missing `X-Content-Type-Options: nosniff`
+- Missing `Referrer-Policy`
+- Cookies missing the `Secure` / `HttpOnly` flags
+- `Server` header information disclosure
+
+### Active checks (enabled with `-e`)
+Payloads are sent to the target, so only use this on systems you are authorized to test.
+
+| Check | Technique | Status |
+|---|---|---|
+| Reflected XSS | Injects marker payloads into every discovered field and checks for unescaped reflection | Confirmed on DVWA `xss_r` |
+| SQL injection (error-based) | Injects non-destructive SQL payloads, matches database error signatures in the response | Confirmed on DVWA `sqli` (and `brute`) |
+| CSRF | Submits state-changing forms with a valid token, then a tampered token, and flags forms that accept both | Implemented, not yet confirmed (see Known gaps) |
+
+XSS, SQLi and CSRF checks run **concurrently** with goroutines and a `sync.WaitGroup`. Each check writes to its own result variable, and results are merged after `Wait()`, so no mutex is needed.
+
+### Discovery and plumbing
+- **Authenticated session handling:** automated login, CSRF token extraction, and security-level configuration, backed by a cookie jar.
+- **Crawler:** same-host link following, relative URL resolution (including `<base href>`), de-duplication, and safety exclusions for session-destroying and state-changing links (`logout`, `setup`).
+- **`robots.txt` discovery:** extracts `Disallow:` paths and feeds them into the crawl list.
+- **Input field discovery:** extracts form fields and their default values per page, so injection requests include every field the application expects.
+- **Structured findings:** every check returns a unified `Finding{Type, URL, Param, Payload, Signature}`, and the report is kept separate from diagnostic logging.
+- **Logging:** `log/slog` with a `-v` flag for debug-level output.
 
 ## Installation
+
+Requires Go 1.21 or later (for `log/slog`).
+
 ```bash
 git clone https://github.com/Yanmife-source/Vindex
 cd Vindex
-go build -o vindex ./...
+go build -o vindex .
 ```
 
 ## Usage
+
 ```bash
-./vindex [options] <target-url>
-```
-### Confirmed Reflected XSS (DVWA)
-Vindex successfully detected and confirmed reflected XSS on DVWA's `xss_r` challenge, end-to-end: automated login, CSRF token handling, security-level configuration, crawling, form-field discovery, and payload injection, all working together against a real authenticated target.
-
-**A bug worth documenting:** for several days, the scanner reliably failed to detect a vulnerability that manual testing confirmed was there. The root cause: the crawler was following *every* same-domain link it found — including the site's own "Logout" link — which silently destroyed the authenticated session mid-crawl. Every check that ran afterward was unknowingly operating on a dead session, producing a clean-looking but meaningless "no vulnerabilities found" result.
-
-**Fix:** the crawler now explicitly excludes logout/session-destroying links from its traversal. **Lesson:** a scanner's most dangerous failure mode isn't a crash — it's a silent false negative that looks identical to a real clean scan. Worth building deliberate safeguards against destructive actions into any crawler from the start.
-
-**Run it:**
-```bash
-go run . -e http://localhost:8080/vulnerabilities/xss_r/
+./vindex [-e] [-v] <target-url>
 ```
 
-### Concurrent injection testing + SQLi detection
+| Flag | Description |
+|---|---|
+| `-e` | Enable active exploitation checks (XSS, SQLi, CSRF). Without it, only passive checks run. |
+| `-v` | Verbose output (debug-level logging). |
 
-XSS and SQLi testing now run **concurrently** via goroutines instead of sequentially — `RunInjectionTests()` fires both checks off in parallel and waits for both to finish before reporting, instead of running XSS to completion and then starting SQLi.
+### Setting up a test target
 
-- `check_SQLi_vuln()` — structurally mirrors `check_XSS_vuln()`: sends a list of SQLi payloads against every discovered input field and checks the response body for known SQL error-message signatures (error-based detection).
-  **Status: not yet confirmed working.** No hits yet against DVWA's `sqli/` page at low security — still diagnosing whether the signature list doesn't match DVWA's actual error wording, or DVWA isn't surfacing a raw SQL error at all. Documenting this honestly rather than claiming it works.
-- `sqli_blind/` is a separate, harder problem — it shows no visible difference between a successful and failed injection, so error-string matching can never catch it by design. That'll need a genuinely different technique later (time-based: a `SLEEP()` payload + measuring response delay).
-
-**Concepts covered:** goroutines (`go func(){}()`), `sync.WaitGroup` (`Add`/`Done`/`Wait`), why result-reading has to happen *after* `Wait()` and never inside the goroutines themselves (race conditions / interleaved output).
-
-**Run it:**
 ```bash
-go run . -e http://localhost:8080/vulnerabilities/sqli/
+docker run -d -p 8080:80 --name dvwa vulnerables/web-dvwa
 ```
 
-### More passive header/security checks
+Open `http://localhost:8080/setup.php`, click **Create / Reset Database**, then run:
 
-`check_headers()` now reports on more than just clickjacking and CSP:
-
-- Missing `X-Content-Type-Options: nosniff`
-- Missing `Referrer-Policy`
-- Cookies missing the `Secure` and/or `HttpOnly` flags
-- `Server` header disclosure (e.g. leaking `Apache/2.4.25 (Debian)`)
-
-All of this is passive — no payloads sent, so it runs regardless of the `-e` flag.
-
-### robots.txt discovery
-
-`check_robots()` fetches `robots.txt` and extracts any `Disallow:` paths, surfacing pages that aren't linked anywhere in the crawlable site but are still reachable — useful for finding hidden/forgotten endpoints. Its output is meant to be merged into the crawler's discovered-links list at the call site in `main.go`, not inside `crawl()` itself, to keep crawling and robots-parsing as separate responsibilities.
-
-**Run it:**
 ```bash
-go run . http://localhost:8080/
+go run . -e -v http://localhost:8080/vulnerabilities/sqli/
 ```
 
-## Why this project exists
-Built as a way to learn Go through a real, ongoing project rather than tutorials — each new check is also a reason to learn a new part of the language (structs, concurrency, error handling, etc.), documented as I go.
+The login flow is currently hardcoded to DVWA's default credentials.
 
-## ⚠️ Disclaimer
-Vindex is intended for authorized security testing and educational purposes only. Only run it against systems you own or have explicit written permission to test.
+### Example output
+
+```
+Scan complete — 3 finding(s)
+
+[XSS]  http://localhost:8080/vulnerabilities/xss_r/ — param="name"
+[SQLi] http://localhost:8080/vulnerabilities/sqli/ — param="id"
+[SQLi] http://localhost:8080/vulnerabilities/brute/ — param="username"
+```
+
+The `brute/` hit is a genuine finding: DVWA's low-security login form concatenates `username` into its SQL query, even though it isn't that page's advertised vulnerability.
+
+## Project structure
+
+```
+main.go      Orchestration: session -> crawl -> robots -> fields -> checks -> report
+auth.go      Login, security level, CSRF token handling, shared HTTP client
+crawl.go     Single-page link extraction and URL resolution
+headers.go   Authenticated fetch helper and passive header analysis
+inject.go    Field discovery, XSS and SQLi checks, concurrent orchestration
+csrf.go      Token-based CSRF check
+```
+
+Currently a single `package main`. Splitting into `core` / `vulns` packages is planned.
+
+## Engineering notes
+
+Debugging notes from building this, kept because the failure modes are more instructive than the features.
+
+**Silent false negatives are the real danger.**
+For days the scanner missed an XSS that manual testing confirmed. The crawler followed every same-domain link, including `Logout`, which destroyed the authenticated session mid-crawl. Every check after that ran on a dead session and produced a clean-looking, meaningless "no vulnerabilities found". The fix was to exclude session-destroying links, and the lesson was that a scanner should be built to fail loudly.
+
+**A scanner can damage its own target.**
+Two separate bugs caused DVWA to "keep resetting". One SQLi payload was a literal `DROP TABLE`, which really executed and dropped the users table. Separately, DVWA's `csrf/` and `captcha/` pages are password-change forms, so injection testing was silently overwriting the admin password. Destructive payloads were removed, and state-changing pages are now excluded from injection tests while remaining visible to the CSRF check.
+
+**Smaller bugs worth remembering:**
+- `slog.SetDefault()` was never called, so the `-v` handler was built but never used by package-level `slog.Debug()` calls.
+- The crawl de-duplication map was declared inside the loop, so it reset every iteration.
+- Relative links were resolved against an empty string when no `<base>` tag existed. The fix was to use `resp.Request.URL` as the default base.
+- Merging error slices with `append(a, b...)` risks corrupting a shared backing array. Results are now merged into a fresh slice.
+
+## Known gaps
+
+- **CSRF check is unverified.** The success-string match is a guess and has not been confirmed against DVWA's real response. It also has no password-restore step, so a positive finding would leave the admin password changed.
+- **GET only.** Most real-world forms use POST. This is the largest gap for use beyond DVWA.
+- **Auth, exclusions and error signatures are DVWA-specific** (hardcoded credentials and login flow, one database engine's error messages).
+- **No blind SQLi.** `sqli_blind/` needs time-based detection, which is a different technique from error matching.
+- **No rate limiting or politeness controls.**
+- **No JavaScript rendering.** Server-rendered pages only.
+- **No automated tests yet.**
+
+## Roadmap
+
+- [ ] Verify the CSRF check and add a password-restore step
+- [ ] Grouped report output: active findings first, passive findings collapsed per header with a page count
+- [ ] Missing-CSRF-token check for state-changing forms with no token field
+- [ ] Breadth-first multi-page crawler (`crawlSite` with depth limit)
+- [ ] Time-based blind SQLi detection
+- [ ] POST support and generalized authentication
+- [ ] `URLFetcher` interface so checks can be unit-tested with fake responses
+- [ ] `core` / `vulns` package split
+- [ ] Further coverage: IDOR, open redirect, directory enumeration
+- [ ] Headless-browser support (chromedp) for SPAs and DOM XSS
+
+## Disclaimer
+
+Vindex is intended for authorized security testing and education only. Only run it against systems you own or have explicit written permission to test. Active mode sends real payloads and can modify or damage the target.
