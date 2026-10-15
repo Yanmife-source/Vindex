@@ -17,7 +17,8 @@ func crawlSite(startURL string, maxDepth int) []string {
 	queue := []queueItem{{startURL, 0}}
 	seen := map[string]bool{startURL: true}
 	var allLinks []string
-
+	
+	slog.Info("Crawling...")
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
@@ -58,7 +59,6 @@ func crawl(resp *http.Response) ([]string) {
 		}
 	}
 	pageURL:=base.String()
-	slog.Info("Crawling...")
 	Loop:
 	for _,link:=range links {
 		resolved, err := base.Parse(link) // handles both relative and absolute hrefs correctly
