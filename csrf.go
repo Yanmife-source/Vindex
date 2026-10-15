@@ -15,8 +15,8 @@ type FormAttr struct {
 	Method string
 }
 
-func checkPassiveCSRF(resp *http.Response, targetURL string) (*FormAttr,error){
-	var formAddr *FormAttr
+func checkPassiveCSRF(resp *http.Response, targetURL string) ([]FormAttr,error){
+	var formAddr []FormAttr
 	// 1. Parse the HTML document
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
@@ -51,7 +51,7 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) (*FormAttr,error){
 		
 		// 5. The Verdict: State-changing form with no token? Flag it.
 		if !hasToken && strings.ToUpper(method) == "POST" {
-			formAddr =&FormAttr{URL:targetURL,Action:action,Method:method}
+			formAddr =append(formAddr,FormAttr{URL:targetURL,Action:action,Method:method})
 		}
 	})
 	return formAddr,nil
