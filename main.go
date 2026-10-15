@@ -23,8 +23,9 @@ var allFindings []Finding
 func main(){
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
-	verbose:=flag.Bool("v",false,"Enables verbose output")
-	depth:=flag.Int("depth",3,"Maximum depth for recursive crawling")
+	verbose:=flag.Bool("v",false,"enables verbose output")
+	depth:=flag.Int("depth",3,"maximum depth for recursive crawling")
+	reportDetail:=flag.Bool("detail",false,"list every URL for passive findings")
 
 	//Parse the terminal input
 	flag.Parse() 
@@ -135,7 +136,7 @@ func main(){
 		allFindings = append(allFindings, headerFindings(url, result)...)
 	}
 
-	printReport(allFindings,len(links),true)
+	printReport(allFindings,len(links),*reportDetail)
 	
 	
 }
