@@ -9,17 +9,17 @@ import (
 	"strings"
 	"github.com/PuerkitoBio/goquery"
 )
-type FormAtrr struct {
-	URL *url.URL
+type FormAttr struct {
+	URL string
 	Action string
 	Method string
 }
 
-func checkPassiveCSRF(resp *http.Response, targetURL string) {
+func checkPassiveCSRF(resp *http.Response, targetURL string) *FormAttr{
 	// 1. Parse the HTML document
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return
+		return nil
 	}
 
 	// 2. Find every <form> on the page and loop through them
@@ -50,10 +50,7 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) {
 
 		// 5. The Verdict: State-changing form with no token? Flag it.
 		if !hasToken && strings.ToUpper(method) == "POST" {
-			fmt.Printf("[CSRF-MISSING] Form found with no token!\n")
-			fmt.Printf("   URL: %s\n", targetURL)
-			fmt.Printf("   Action: %s\n", action)
-			fmt.Printf("   Method: %s\n", method)
+			return &FormAttr{URL:targetURL,Action:action,Method:method}
 		}
 	})
 }
