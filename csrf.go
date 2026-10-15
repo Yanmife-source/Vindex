@@ -15,11 +15,12 @@ type FormAttr struct {
 	Method string
 }
 
-func checkPassiveCSRF(resp *http.Response, targetURL string) *FormAttr{
+func checkPassiveCSRF(resp *http.Response, targetURL string) (*FormAttr,error){
+	var formAddr *FormAttr
 	// 1. Parse the HTML document
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return nil
+		return nil,err
 	}
 
 	// 2. Find every <form> on the page and loop through them
@@ -47,12 +48,13 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) *FormAttr{
 				}
 			}
 		})
-
+		
 		// 5. The Verdict: State-changing form with no token? Flag it.
 		if !hasToken && strings.ToUpper(method) == "POST" {
-			return &FormAttr{URL:targetURL,Action:action,Method:method}
+			formAddr =&FormAttr{URL:targetURL,Action:action,Method:method}
 		}
 	})
+	return formAddr,nil
 }
 
 func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {var findings []Finding
