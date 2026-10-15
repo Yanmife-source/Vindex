@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"golang.org/x/net/html"
+	"github.com/PuerkitoBio/goquery"
 )
 type FormAtrr struct {
 	URL *url.URL
@@ -15,36 +15,47 @@ type FormAtrr struct {
 	Method string
 }
 
-func passive_CSRF_check(resp *http.Response) ([]FormAttr){
-	var fields []FormAttr
-	tokenizer := html.NewTokenizer(resp.Body)
-	url:=resp.Request.URL
-
-	for {
-		tt := tokenizer.Next()
-		if tt == html.ErrorToken {
-			break // reached end of document (io.EOF, expected)
-		}
-		//checks for inputs tags and stores their name and value attribultes
-		if tt == html.StartTagToken  {
-			token := tokenizer.Token()
-			if token.Data == "form" {
-				var action,method string
-				for _, attr := range token.Attr {
-					if attr.Key == "action" {
-						action = attr.Val   // the VALUE of the name attribute, not attr.Key
-					}
-					if attr.Key == "method" {
-						method = attr.Val
-					}
-				}
-				if action != "" || method !="" {
-					fields = append(fields, FormAtrr{URL:url,Action: action, Method: method})
-							}
-			}
-		}
+func checkPassiveCSRF(resp *http.Response, targetURL string) {
+	// 1. Parse the HTML document
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return
 	}
-	return fields
+
+	// 2. Find every <form> on the page and loop through them
+	doc.Find("form").Each(func(index int, form *goquery.Selection) {
+		
+		// 3. Extract the Action and Method
+		action, _ := form.Attr("action")
+		method, _ := form.Attr("method")
+		if method == "" {
+			method = "GET" // Browsers default to GET if it's missing
+		}
+
+		hasToken := false
+
+		// 4. Find all <input> tags INSIDE this specific form
+		form.Find("input").Each(func(i int, input *goquery.Selection) {
+			inputType, _ := input.Attr("type")
+			inputName, _ := input.Attr("name")
+
+			// Check if this input is a hidden CSRF token
+			if strings.ToLower(inputType) == "hidden" {
+				nameLower := strings.ToLower(inputName)
+				if strings.Contains(nameLower, "csrf") || strings.Contains(nameLower, "token") {
+					hasToken = true
+				}
+			}
+		})
+
+		// 5. The Verdict: State-changing form with no token? Flag it.
+		if !hasToken && strings.ToUpper(method) == "POST" {
+			fmt.Printf("[CSRF-MISSING] Form found with no token!\n")
+			fmt.Printf("   URL: %s\n", targetURL)
+			fmt.Printf("   Action: %s\n", action)
+			fmt.Printf("   Method: %s\n", method)
+		}
+	})
 }
 
 func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {var findings []Finding
