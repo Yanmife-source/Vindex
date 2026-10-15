@@ -21,10 +21,12 @@ const (
 var allFindings []Finding
 
 func main(){
+	var depth int
 	// This creates a boolean flag "-e". It defaults to false.
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
 	verbose:=flag.Bool("v",false,"enables verbose output")
-	depth:=flag.Int("depth",3,"maximum depth for recursive crawling")
+	flag.IntVar(&depth, "depth", 3, "maximum crawl depth")
+	flag.IntVar(&depth, "d", 3, "shorthand for -depth")
 	reportDetail:=flag.Bool("detail",false,"list every URL for passive findings")
 
 	//Parse the terminal input
