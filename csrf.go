@@ -7,7 +7,45 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"golang.org/x/net/html"
 )
+type FormAtrr struct {
+	URL *url.URL
+	Action string
+	Method string
+}
+
+func passive_CSRF_check(resp *http.Response) ([]FormAttr){
+	var fields []FormAttr
+	tokenizer := html.NewTokenizer(resp.Body)
+	url:=resp.Request.URL
+
+	for {
+		tt := tokenizer.Next()
+		if tt == html.ErrorToken {
+			break // reached end of document (io.EOF, expected)
+		}
+		//checks for inputs tags and stores their name and value attribultes
+		if tt == html.StartTagToken  {
+			token := tokenizer.Token()
+			if token.Data == "form" {
+				var action,method string
+				for _, attr := range token.Attr {
+					if attr.Key == "action" {
+						action = attr.Val   // the VALUE of the name attribute, not attr.Key
+					}
+					if attr.Key == "method" {
+						method = attr.Val
+					}
+				}
+				if action != "" || method !="" {
+					fields = append(fields, FormAtrr{URL:url,Action: action, Method: method})
+							}
+			}
+		}
+	}
+	return fields
+}
 
 func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {var findings []Finding
 	var errs []error

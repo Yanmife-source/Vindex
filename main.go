@@ -88,7 +88,7 @@ func main(){
 
 	
 	//Crawls the webpage and finds input fields there
-	links:=crawlSite(targetURL,*depth)
+	links:=crawlSite(targetURL,depth)
 	//Include paths found in robots.txt
 	slog.Info("Checking robots.txt... ")
 	disallowedPaths, err := checkRobots(targetURL)
