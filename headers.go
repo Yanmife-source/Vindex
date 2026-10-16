@@ -30,9 +30,9 @@ type ScanResult struct {
 	Cookies []string
 }
 
-func checkPageHeaders(links []string) (map[string]ScanResult,[]error) {
+func checkPassiveChecks(links []string) ([]Finding,[]error) {
 	var errs []error
-	headerResults:=map[string]ScanResult{}
+	out:=[]Finding
 	for _, link := range links {          // same crawled links used elsewhere
 		
 		response,err:=fetchURL(link)
@@ -42,9 +42,33 @@ func checkPageHeaders(links []string) (map[string]ScanResult,[]error) {
 		}
 		defer response.Body.Close()
 		result := check_header(response)
+		if result.ClickjackingVuln {
+			out = append(out, Finding{Type: "Clickjacking", URL: link, Param: "X-Frame-Options/CSP frame-ancestors"})
+		}
+		if result.MissingCSP {
+			out = append(out, Finding{Type: "Missing-Header", URL: link, Param: "Content-Security-Policy"})
+		}
+		if result.MissingHSTS {
+			out = append(out, Finding{Type: "Missing-Header", URL: link, Param: "Strict-Transport-Security"})
+		}
+		if result.MissingXCTO {
+			out = append(out, Finding{Type: "Missing-Header", URL: link, Param: "X-Content-Type-Options"})
+		}
+		if result.MissingReferrerPolicy {
+			out = append(out, Finding{Type: "Missing-Header", URL: link, Param: "Referrer-Policy"})
+		}
+		if result.ServerInfo != "" {
+			out = append(out, Finding{Type: "Info-Disclosure", URL: link, Param: "Server: " + r.ServerInfo})
+		}
+		for _, c := range result.Cookies {
+			out = append(out, Finding{Type: "Cookie-Flag", URL: link, Param: c})
+		}
 		
+		form_attr,err:=checkPassiveCSRF(response)
+		if err!=nil{
+
+		}
 		
-		headerResults[link] = result
 	}
 	return headerResults,errs
 
