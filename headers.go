@@ -32,8 +32,7 @@ type ScanResult struct {
 
 func runPassiveChecks(links []string) ([]Finding,[]error) {
 	var errs []error
-	 var csrfFindings []Finding
-	out:=[]Finding
+	 var out []Finding
 	for _, link := range links {          // same crawled links used elsewhere
 		
 		response,err:=fetchURL(link)
@@ -67,15 +66,13 @@ func runPassiveChecks(links []string) ([]Finding,[]error) {
 		
 		form_attrs,err:=checkPassiveCSRF(response)
 		if err!=nil{
-			errs=append(errs,fmt.Errorf("Could not  check %s for CSRF:%w",link,err))
+			errs=append(errs,fmt.Errorf("could not check %s for CSRF:%w",link,err))
 			continue
 		}
 		for _,form_attr:=range form_attrs{
 				param:=fmt.Sprintf("No-Token (%s -> %s)",form_attr.Method,form_attr.Action)
-				csrfFindings=append(csrfFindings,Finding{Type:"Potential-CSRF",URL:link,Param:param})
+				out=append(out,Finding{Type:"Potential-CSRF",URL:link,Param:param})
 		}
-		
-		
 	}
 	return out,errs
 
