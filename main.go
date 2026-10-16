@@ -127,7 +127,7 @@ func main(){
 		allFindings = append(allFindings, results.CSRF...)
 	}  else {
 		slog.Info("Running in passive mode. No payloads will be sent.")
-		form_attr,err:=checkPassiveCSRF(resp,targetURL)
+		form_attr,err:=checkPassiveCSRF(resp)
 	}
 	for url, result := range allHeaderResults { // whatever check_headers returned per-page
 		allFindings = append(allFindings, headerFindings(url, result)...)

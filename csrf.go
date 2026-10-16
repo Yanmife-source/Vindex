@@ -15,7 +15,7 @@ type FormAttr struct {
 	Method string
 }
 
-func checkPassiveCSRF(resp *http.Response, targetURL string) ([]FormAttr,error){
+func checkPassiveCSRF(resp *http.Response) ([]FormAttr,error){
 	var form_attr []FormAttr
 	// 1. Parse the HTML document
 	doc, err := goquery.NewDocumentFromReader(resp.Body)

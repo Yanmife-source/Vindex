@@ -47,7 +47,7 @@ func crawlSite(startURL string, maxDepth int) []string {
 func crawl(resp *http.Response) ([]string) {
 	var res_links []string
 	var all_links []string
-	var skipList=[]string{"logout","setup"}
+	var skipList=[]string{"logout","setup","phpids="}
 	var seen=make(map[string]bool)
 	links,base_url,_:=find_links(resp)
 	base:=resp.Request.URL
