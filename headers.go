@@ -70,7 +70,7 @@ func runPassiveChecks(links []string) ([]Finding,[]error) {
 			continue
 		}
 		for _,form_attr:=range form_attrs{
-				param:=fmt.Sprintf("No-Token (%s -> %s)",form_attr.Method,form_attr.Action)
+				param:=fmt.Sprintf("No-Token (%s -> %s)",strings.ToUpper(form_attr.Method),form_attr.Action)
 				out=append(out,Finding{Type:"Potential-CSRF",URL:link,Param:param})
 		}
 	}

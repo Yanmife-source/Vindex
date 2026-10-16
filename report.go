@@ -60,6 +60,6 @@ func printReport(findings []Finding, pagesChecked int, detail bool) {
 		}
 	}
 	if !detail {
-		fmt.Println("(use -passive-detail to list every URL)")
+		fmt.Println("(use -detail to list every URL)")
 	}
 }

@@ -22,7 +22,7 @@ func checkPassiveCSRF(resp *http.Response) ([]FormAttr,error){
 	if err != nil {
 		return nil,err
 	}
-
+	slog.Info("Checking for CSRF...")
 
 	actionURL:=resp.Request.URL
 	// 2. Find every <form> on the page and loop through them
@@ -70,7 +70,6 @@ func checkPassiveCSRF(resp *http.Response) ([]FormAttr,error){
 		
 		// 5. The Verdict: State-changing form with no token? Flag it.
 		if !hasToken && (strings.ToUpper(method) == "POST" || passwordCount>=2) {
-			slog.Info("")
 			form_attr =append(form_attr,FormAttr{URL:actionURL.String(),Action:action,Method:method})
 		}
 	})
