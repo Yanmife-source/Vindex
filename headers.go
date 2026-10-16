@@ -71,10 +71,8 @@ func runPassiveChecks(links []string) ([]Finding,[]error) {
 			continue
 		}
 		for _,form_attr:=range form_attrs{
-			if form_attr.URL==link{
-				param:=fmt.Sprintf("NoToken (%s -> %s)",form_attr.Method,form_attr.Action)
+				param:=fmt.Sprintf("No-Token (%s -> %s)",form_attr.Method,form_attr.Action)
 				csrfFindings=append(csrfFindings,Finding{Type:"Potential-CSRF",URL:link,Param:param})
-			}
 		}
 		
 		
@@ -111,29 +109,5 @@ func check_header(resp *http.Response) ScanResult {
 	}
 }
 
-func headerFindings(url string, r ScanResult) []Finding {
-	var out []Finding
-	if r.ClickjackingVuln {
-		out = append(out, Finding{Type: "Clickjacking", URL: url, Param: "X-Frame-Options/CSP frame-ancestors"})
-	}
-	if r.MissingCSP {
-		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "Content-Security-Policy"})
-	}
-	if r.MissingHSTS {
-		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "Strict-Transport-Security"})
-	}
-	if r.MissingXCTO {
-		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "X-Content-Type-Options"})
-	}
-	if r.MissingReferrerPolicy {
-		out = append(out, Finding{Type: "Missing-Header", URL: url, Param: "Referrer-Policy"})
-	}
-	if r.ServerInfo != "" {
-		out = append(out, Finding{Type: "Info-Disclosure", URL: url, Param: "Server: " + r.ServerInfo})
-	}
-	for _, c := range r.Cookies {
-		out = append(out, Finding{Type: "Cookie-Flag", URL: url, Param: c})
-	}
-	return out
-}
+
 
