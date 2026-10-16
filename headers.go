@@ -67,11 +67,13 @@ func runPassiveChecks(links []string) ([]Finding,[]error) {
 		
 		form_attrs,err:=checkPassiveCSRF(response)
 		if err!=nil{
+			errs=append(errs,fmt.Errorf("Could not  check %s for CSRF:%w",link,err))
 			continue
 		}
 		for _,form_attr:=range form_attrs{
 			if form_attr.URL==link{
-				csrfFinding=append(csrfFinding,Finding{Type:"Potential CSRF Finding",URL:link,Param:"No CSRF Token"+form_attr.Method+form_attr.Action})
+				param:=fmt.Sprintf("NoToken (%s -> %s)",form_attr.Method,form_attr.Action)
+				csrfFindings=append(csrfFindings,Finding{Type:"Potential-CSRF",URL:link,Param:param})
 			}
 		}
 		
