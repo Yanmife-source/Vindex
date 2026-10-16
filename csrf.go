@@ -23,7 +23,7 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) ([]FormAttr,error){
 		return nil,err
 	}
 
-	var resolved *url.URL
+
 	actionURL:=resp.Request.URL
 	// 2. Find every <form> on the page and loop through them
 	doc.Find("form").Each(func(index int, form *goquery.Selection) {
@@ -31,15 +31,15 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) ([]FormAttr,error){
 		// 3. Extract the Action and Method
 		action, _ := form.Attr("action")
 		method, _ := form.Attr("method")
-		if action==""{
+		
 			
-			
-			
-			if resolved,err=actionURL.Parse(targetURL);err!=nil{
-				return 
-			}
-			action=resolved.String()
+		resolved,err:=actionURL.Parse(action);	
+		if err!=nil{
+			slog.Debug("Couldn't parse URL","action",action,"error",err)
+			return 
 		}
+		action=resolved.String()
+		
 		if method == "" {
 			method = "GET" // Browsers default to GET if it's missing
 		}
