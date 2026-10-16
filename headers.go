@@ -30,8 +30,9 @@ type ScanResult struct {
 	Cookies []string
 }
 
-func checkPassiveChecks(links []string) ([]Finding,[]error) {
+func runPassiveChecks(links []string) ([]Finding,[]error) {
 	var errs []error
+	 var csrfFindings []Finding
 	out:=[]Finding
 	for _, link := range links {          // same crawled links used elsewhere
 		
@@ -58,19 +59,25 @@ func checkPassiveChecks(links []string) ([]Finding,[]error) {
 			out = append(out, Finding{Type: "Missing-Header", URL: link, Param: "Referrer-Policy"})
 		}
 		if result.ServerInfo != "" {
-			out = append(out, Finding{Type: "Info-Disclosure", URL: link, Param: "Server: " + r.ServerInfo})
+			out = append(out, Finding{Type: "Info-Disclosure", URL: link, Param: "Server: " + result.ServerInfo})
 		}
 		for _, c := range result.Cookies {
 			out = append(out, Finding{Type: "Cookie-Flag", URL: link, Param: c})
 		}
 		
-		form_attr,err:=checkPassiveCSRF(response)
+		form_attrs,err:=checkPassiveCSRF(response)
 		if err!=nil{
-
+			continue
+		}
+		for _,form_attr:=range form_attrs{
+			if form_attr.URL==link{
+				csrfFinding=append(csrfFinding,Finding{Type:"Potential CSRF Finding",URL:link,Param:"No CSRF Token"+form_attr.Method+form_attr.Action})
+			}
 		}
 		
+		
 	}
-	return headerResults,errs
+	return out,errs
 
 }
 

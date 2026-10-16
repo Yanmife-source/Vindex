@@ -107,7 +107,7 @@ func main(){
     }
 
 	slog.Info("Starting scan on: ","url", targetURL)
-	allHeaderResults,errs:=checkPassiveChecks((links))
+	allHeaderResults,errs:=runPassiveChecks((links))
 	if errs!=nil{
 		allErrs:=errors.Join(errs...)
 		slog.Error("Failed to Check Headers","error",allErrs)
@@ -128,9 +128,9 @@ func main(){
 	}  else {
 		slog.Info("Running in passive mode. No payloads will be sent.")
 	}
-	for url, result := range allHeaderResults { // whatever check_headers returned per-page
-		allFindings = append(allFindings, headerFindings(url, result)...)
-	}
+	// whatever check_headers returned per-page
+	allFindings = append(allFindings, allHeaderResults...)
+	
 
 	printReport(allFindings,len(links),*reportDetail)
 	
