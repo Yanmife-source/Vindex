@@ -24,6 +24,7 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) ([]FormAttr,error){
 	}
 
 	var resolved *url.URL
+	actionURL:=resp.Request.URL
 	// 2. Find every <form> on the page and loop through them
 	doc.Find("form").Each(func(index int, form *goquery.Selection) {
 		
@@ -31,7 +32,7 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) ([]FormAttr,error){
 		action, _ := form.Attr("action")
 		method, _ := form.Attr("method")
 		if action==""{
-			actionURL:=resp.Request.URL
+			
 			
 			
 			if resolved,err=actionURL.Parse(targetURL);err!=nil{
@@ -68,9 +69,9 @@ func checkPassiveCSRF(resp *http.Response, targetURL string) ([]FormAttr,error){
 		})
 		
 		// 5. The Verdict: State-changing form with no token? Flag it.
-		if !hasToken && (strings.ToUpper(method) == "POST" || passwordCount>2) {
+		if !hasToken && (strings.ToUpper(method) == "POST" || passwordCount>=2) {
 			slog.Info("")
-			form_attr =append(form_attr,FormAttr{URL:targetURL,Action:action,Method:method})
+			form_attr =append(form_attr,FormAttr{URL:actionURL.String(),Action:action,Method:method})
 		}
 	})
 	return form_attr,nil
