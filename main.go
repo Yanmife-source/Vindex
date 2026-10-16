@@ -125,14 +125,9 @@ func main(){
 		allFindings = append(allFindings, results.XSS...)
 		allFindings = append(allFindings, results.SQLi...)
 		allFindings = append(allFindings, results.CSRF...)
-		// if err!=nil {
-		// 	fmt.Println("Error occurred:", err)
-		// }
-		// for _,result:=range results {
-		// 	fmt.Println(result)
-		// } 
 	}  else {
 		slog.Info("Running in passive mode. No payloads will be sent.")
+		form_attr,err:=checkPassiveCSRF(resp,targetURL)
 	}
 	for url, result := range allHeaderResults { // whatever check_headers returned per-page
 		allFindings = append(allFindings, headerFindings(url, result)...)
