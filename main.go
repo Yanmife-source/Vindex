@@ -22,7 +22,7 @@ var allFindings []Finding
 
 func main(){
 	var depth int
-	// This creates a boolean flag "-e". It defaults to false.
+
 	exploit:=flag.Bool("e",false,"attempt active exploitation of detected vulnerabilities")
 	verbose:=flag.Bool("v",false,"enables verbose output")
 	flag.IntVar(&depth, "depth", 3, "maximum crawl depth")
