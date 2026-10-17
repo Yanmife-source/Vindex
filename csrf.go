@@ -97,7 +97,7 @@ func check_CSRF_vuln(fields map[string][]field) ([]Finding,[]error) {var finding
 	return findings, errs
 }
 func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,error){
-	realParams := buildParams(field) // all fields including real token, as you already do for SQLi/XSS
+	realParams := buildParams(field) // all fields including real token
 
 	ogURL:=link + "?" + realParams.Encode()
 	resp1, err := fetchURL(ogURL)
