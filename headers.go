@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"strings"
 )
-
+type Doer interface {
+    Do(req *http.Request) (*http.Response, error)
+}
 
 func fetchURL(url string) (*http.Response,error) {
 	req, err := http.NewRequest("GET",url,nil)
