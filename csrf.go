@@ -100,7 +100,7 @@ func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,erro
 	realParams := buildParams(field) // all fields including real token
 
 	ogURL:=link + "?" + realParams.Encode()
-	resp1, err := fetchURL(ogURL)
+	resp1, err := fetchURL(client,ogURL)
 	if err != nil { 
 		return nil, fmt.Errorf("Couldn't reach %s:%w",ogURL,err)
 	}
@@ -116,7 +116,7 @@ func testCSRFOnPage(link string,field []field,tokenfield string) (*Finding ,erro
 	tamperedParams.Set(tokenfield, "invalid_or_missing")
 
 	tamperedURL:=link + "?" + tamperedParams.Encode()
-	resp2, err := fetchURL(tamperedURL)
+	resp2, err := fetchURL(client,tamperedURL)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't reach %s:%w",tamperedURL,err)
 		}

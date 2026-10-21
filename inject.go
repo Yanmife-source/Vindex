@@ -81,7 +81,7 @@ func find_input_fields(links []string) (map[string][]field,error) {
 	fields:=make(map[string][]field)
 	slog.Info("Finding input fields... ")
 	for _,link:=range links {
-		resp,err:=fetchURL(link)
+		resp,err:=fetchURL(client,link)
 		if err!=nil{
 			continue
 		}
@@ -146,7 +146,7 @@ func check_XSS_vuln(input_fields map[string][]field) ([]Finding,[]error) {
 				test_url := fmt.Sprintf("%s?%s", key, qs.Encode())
 
 
-				resp,error:=fetchURL(test_url)
+				resp,error:=fetchURL(client,test_url)
 				if error!=nil {
 					errs = append(errs, fmt.Errorf("could not test %s: %w", test_url, error)) // REAL failure
 					continue
@@ -219,7 +219,7 @@ func check_SQLi_vuln(input_fields map[string][]field) ([]Finding,[]error) {
 				}
 				test_url := fmt.Sprintf("%s?%s", key, qs.Encode())
 
-				resp,error:=fetchURL(test_url)
+				resp,error:=fetchURL(client,test_url)
 				if error!=nil {
 					errs = append(errs, fmt.Errorf("could not test %s: %w", test_url, error)) // REAL failure
 					continue

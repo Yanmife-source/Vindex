@@ -9,16 +9,12 @@ type Doer interface {
     Do(req *http.Request) (*http.Response, error)
 }
 
-func fetchURL(url string) (*http.Response,error) {
+func fetchURL(d Doer,url string) (*http.Response,error) {
 	req, err := http.NewRequest("GET",url,nil)
     if err!=nil{
 		return nil, fmt.Errorf("could not reach %s: %w", url, err)
 	}
-	resp,err:=client.Do(req)
-	if err!=nil {
-		return nil,err
-	}
-	return resp,nil
+	return d.Do(req)
 
 }
 
@@ -37,7 +33,7 @@ func runPassiveChecks(links []string) ([]Finding,[]error) {
 	 var out []Finding
 	for _, link := range links {          // same crawled links used elsewhere
 		
-		response,err:=fetchURL(link)
+		response,err:=fetchURL(client,link)
 		if err!=nil{
 			errs=append(errs,fmt.Errorf("Could not reach URL %s:%w",link,err))
 			continue

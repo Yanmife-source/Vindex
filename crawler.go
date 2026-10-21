@@ -28,7 +28,7 @@ func crawlSite(startURL string, maxDepth int) []string {
 			continue
 		}
 
-		resp, err := fetchURL(current.url)
+		resp, err := fetchURL(client,current.url)
 		if err != nil {
 			continue
 		}
@@ -161,7 +161,7 @@ func findCSRFToken (resp *http.Response) (string,error) {
 
 func checkRobots(baseURL string) ([]string,error){
 	robotsURL := baseURL + "/robots.txt"
-	resp, err := fetchURL(robotsURL)
+	resp, err := fetchURL(client,robotsURL)
 	if err != nil {
 		return nil, err
 	}

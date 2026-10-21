@@ -68,7 +68,7 @@ func main(){
 		return
 	} 
 	slog.Info("Security level set successfully")
-	secResp, _ := fetchURL(securityURL)
+	secResp, _ := fetchURL(client,securityURL)
 	body, _ := io.ReadAll(secResp.Body)
 	secResp.Body.Close()
 	slog.Debug("Security level set","value",strings.Contains(string(body), `value="low" selected`))
@@ -79,7 +79,7 @@ func main(){
 
 	//Fetch the url and checks for errors
 	slog.Info("Fetching the URL... ")
-	resp,err:=fetchURL(targetURL)
+	resp,err:=fetchURL(client,targetURL)
 	if err!=nil {
 		slog.Error("Failed the fetch target url","error",err)
 		return
