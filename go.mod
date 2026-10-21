@@ -7,4 +7,7 @@ require (
 	golang.org/x/net v0.59.0
 )
 
-require github.com/andybalholm/cascadia v1.3.4 // indirect
+require (
+	github.com/andybalholm/cascadia v1.3.4 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
