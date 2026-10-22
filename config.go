@@ -31,5 +31,13 @@ type Auth struct {
     LoginURL    string `yaml:"login_url"`
     Username    string `yaml:"username"`
     PasswordEnv string `yaml:"password_env"`
+	SuccessMarker string `yaml:"success_marker"`
+}
+
+func DefaultConfig() Config {
+    var c Config
+    c.Crawl.Depth = 3
+    c.Limits.Workers = 4
+    return c
 }
 
