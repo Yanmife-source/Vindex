@@ -1,5 +1,9 @@
 package main
 
+import (
+	"os"
+	"gopkg.in/yaml.v3"
+)
 type Config struct {
 	Target string `yaml:"target"`
 	Scope struct {
@@ -13,6 +17,13 @@ type Config struct {
 	Checks struct {
 		Enabled []string `yaml:"enabled"`
 	}`yaml:"checks"`
+	Limits struct {
+		Workers int `yaml:"workers"`
+		RequestsPerSecond int `yaml:"request_per_second"`
+	} `yaml:"limits"`
+	Output struct{
+		Detail bool `yaml:"detail"`
+	}`yaml:"output"`
 }
 
 type Auth struct {
